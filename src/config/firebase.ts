@@ -3,18 +3,24 @@ import { getFirestore } from 'firebase/firestore';
 import { getDatabase } from 'firebase/database';
 
 /**
- * CẤU HÌNH FIREBASE DỰ ÁN: todo-19cde
+ * CẤU HÌNH FIREBASE DỰ ÁN
+ * Expo tự động đọc các biến có tiền tố EXPO_PUBLIC_* từ file .env hoặc EAS Environment Variables
  */
 const firebaseConfig = {
-  apiKey: 'AIzaSyDMJG0Z9xw-hCUFkQ_dGPathWvpc2hx_lM',
-  authDomain: 'todo-19cde.firebaseapp.com',
-  projectId: 'todo-19cde',
-  storageBucket: 'todo-19cde.firebasestorage.app',
-  messagingSenderId: '399499739623',
-  appId: '1:399499739623:web:b210212af4be4471b9fd42',
-  measurementId: 'G-TQNJMH7F1G',
-  // Hỗ trợ sẵn nếu bạn muốn dùng Realtime Database
-  databaseURL: 'https://todo-19cde-default-rtdb.firebaseio.com',
+  apiKey:
+    process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+  authDomain:
+    process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId:
+    process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket:
+    process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET ,
+  messagingSenderId:
+    process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId:
+    process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+  databaseURL:
+    process.env.EXPO_PUBLIC_FIREBASE_DATABASE_URL,
 };
 
 // Khởi tạo Firebase App (Tránh khởi tạo nhiều lần khi hot reload trên React Native)

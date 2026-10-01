@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Demo_firebase",
-    "slug": "demo-firebase",
+    "name": "Notion",
+    "slug": "notion-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
@@ -10,15 +10,22 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.nha1905.notion"
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.nha1905.notion"
     },
     "web": {
       "bundler": "metro"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "35eacc9b-1314-4cc2-896e-8557db0f11dd"
+      }
     }
   }
 }
