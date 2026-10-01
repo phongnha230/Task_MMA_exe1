@@ -10,7 +10,7 @@ import {
   serverTimestamp,
   Timestamp,
 } from 'firebase/firestore';
-import { firestore } from './firebase';
+import { firestore } from '../config/firebase';
 import { CreateTaskInput, Task, UpdateTaskInput } from '../types/task';
 
 export const TASKS_COLLECTION = 'tasks';

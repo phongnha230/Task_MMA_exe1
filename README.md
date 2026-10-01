@@ -53,18 +53,18 @@ erDiagram
 
 ### Document Fields Reference:
 
-| Field | Type | Description |
-|---|---|---|
-| `id` | `string` | Auto-generated document ID in Firestore |
-| `title` | `string` | Title of the task (Required) |
-| `description` | `string` | Detailed note / task description (Optional) |
-| `status` | `'To Do' \| 'In Progress' \| 'Done'` | Current progress of the task |
-| `priority` | `'Low' \| 'Medium' \| 'High'` | Priority classification |
-| `dueDate` | `string \| null` | Deadline date string (e.g. `2026-10-15`) |
-| `createdAt` | `Timestamp / number` | Timestamp of task creation |
-| `updatedAt` | `Timestamp / number` | Timestamp of last modification |
-| `teamId` | `string \| null` | Reserved for Practical Exam 2 |
-| `assigneeId` | `string \| null` | Reserved for Practical Exam 2 |
+| Field         | Type                                 | Description                                 |
+| ------------- | ------------------------------------ | ------------------------------------------- |
+| `id`          | `string`                             | Auto-generated document ID in Firestore     |
+| `title`       | `string`                             | Title of the task (Required)                |
+| `description` | `string`                             | Detailed note / task description (Optional) |
+| `status`      | `'To Do' \| 'In Progress' \| 'Done'` | Current progress of the task                |
+| `priority`    | `'Low' \| 'Medium' \| 'High'`        | Priority classification                     |
+| `dueDate`     | `string \| null`                     | Deadline date string (e.g. `2026-10-15`)    |
+| `createdAt`   | `Timestamp / number`                 | Timestamp of task creation                  |
+| `updatedAt`   | `Timestamp / number`                 | Timestamp of last modification              |
+| `teamId`      | `string \| null`                     | Reserved for Practical Exam 2               |
+| `assigneeId`  | `string \| null`                     | Reserved for Practical Exam 2               |
 
 ---
 
@@ -108,26 +108,32 @@ erDiagram
 ## 🚀 Getting Started
 
 ### 1. Prerequisites
+
 - Node.js (v18 or v20 recommended)
 - Expo Go app on mobile device or Android/iOS Emulator
 
 ### 2. Installation
+
 ```bash
 npm install
 ```
 
 ### 3. Setup Firebase
+
 Copy `.env.example` to `.env` or verify configuration in `src/services/firebase.ts`.
 
 ### 4. Run the Application
+
 ```bash
 npx expo start
 ```
+
 - Press `a` for Android Emulator.
 - Press `w` for Web preview.
 - Scan QR code with **Expo Go** on a physical phone.
 
 ### 5. Quality Checks
+
 ```bash
 # TypeScript type check
 npm run type-check

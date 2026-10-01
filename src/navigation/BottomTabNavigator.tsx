@@ -22,6 +22,8 @@ export const BottomTabNavigator: React.FC = () => {
       initialRouteName="Home"
       screenOptions={({ route }) => ({
         headerShown: false,
+        detachInactiveScreens: false,
+        animation: 'none',
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarStyle: styles.tabBar,

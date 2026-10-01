@@ -14,6 +14,8 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { CreateTaskInput, Task, TaskPriority, TaskStatus, UpdateTaskInput } from '../types/task';
 import { colors } from '../theme/colors';
+import { DueDatePicker } from './DueDatePicker';
+import { SegmentedControl, SegmentOption } from './SegmentedControl';
 
 interface TaskModalProps {
   visible: boolean;
@@ -22,6 +24,18 @@ interface TaskModalProps {
   onSubmitCreate: (data: CreateTaskInput) => Promise<void>;
   onSubmitUpdate: (id: string, data: UpdateTaskInput) => Promise<void>;
 }
+
+const statusOptions: SegmentOption<TaskStatus>[] = [
+  { label: 'To Do', value: 'To Do', color: colors.statusTodo },
+  { label: 'In Progress', value: 'In Progress', color: colors.statusInProgress },
+  { label: 'Done', value: 'Done', color: colors.statusDone },
+];
+
+const priorityOptions: SegmentOption<TaskPriority>[] = [
+  { label: 'Low', value: 'Low', color: colors.priorityLow },
+  { label: 'Medium', value: 'Medium', color: colors.priorityMedium },
+  { label: 'High', value: 'High', color: colors.priorityHigh },
+];
 
 export const TaskModal: React.FC<TaskModalProps> = ({
   visible,
@@ -72,22 +86,18 @@ export const TaskModal: React.FC<TaskModalProps> = ({
       setLoading(true);
       setErrorMessage('');
 
+      const payload = {
+        title: title.trim(),
+        description: description.trim(),
+        status,
+        priority,
+        dueDate: dueDate.trim() || null,
+      };
+
       if (isEditMode && taskToEdit) {
-        await onSubmitUpdate(taskToEdit.id, {
-          title: title.trim(),
-          description: description.trim(),
-          status,
-          priority,
-          dueDate: dueDate.trim() || null,
-        });
+        await onSubmitUpdate(taskToEdit.id, payload);
       } else {
-        await onSubmitCreate({
-          title: title.trim(),
-          description: description.trim(),
-          status,
-          priority,
-          dueDate: dueDate.trim() || null,
-        });
+        await onSubmitCreate(payload);
       }
 
       onClose();
@@ -100,18 +110,6 @@ export const TaskModal: React.FC<TaskModalProps> = ({
     }
   };
 
-  const statusOptions: { label: string; value: TaskStatus; color: string }[] = [
-    { label: 'To Do', value: 'To Do', color: colors.statusTodo },
-    { label: 'In Progress', value: 'In Progress', color: colors.statusInProgress },
-    { label: 'Done', value: 'Done', color: colors.statusDone },
-  ];
-
-  const priorityOptions: { label: string; value: TaskPriority; color: string }[] = [
-    { label: 'Low', value: 'Low', color: colors.priorityLow },
-    { label: 'Medium', value: 'Medium', color: colors.priorityMedium },
-    { label: 'High', value: 'High', color: colors.priorityHigh },
-  ];
-
   return (
     <Modal visible={visible} animationType="fade" transparent={true} onRequestClose={onClose}>
       <KeyboardAvoidingView
@@ -121,10 +119,10 @@ export const TaskModal: React.FC<TaskModalProps> = ({
         <TouchableOpacity style={styles.backdropDismiss} activeOpacity={1} onPress={onClose} />
 
         <View style={styles.sheetContainer}>
-          {/* Drag Handle Bar */}
+          {/* Thanh kéo trang trí */}
           <View style={styles.dragHandle} />
 
-          {/* Sheet Header */}
+          {/* Tiêu đề Modal */}
           <View style={styles.sheetHeader}>
             <View>
               <Text style={styles.sheetTitle}>
@@ -140,11 +138,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             </TouchableOpacity>
           </View>
 
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.formScroll}
-          >
-            {/* Error banner */}
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.formScroll}>
+            {/* Banner hiển thị lỗi nếu có */}
             {!!errorMessage && (
               <View style={styles.errorBanner}>
                 <Feather name="alert-triangle" size={14} color={colors.danger} />
@@ -152,7 +147,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               </View>
             )}
 
-            {/* Title field */}
+            {/* Tiêu đề */}
             <View style={styles.fieldBlock}>
               <Text style={styles.fieldLabel}>
                 Tiêu đề nhiệm vụ <Text style={styles.asterisk}>*</Text>
@@ -169,7 +164,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               />
             </View>
 
-            {/* Description field */}
+            {/* Ghi chú chi tiết */}
             <View style={styles.fieldBlock}>
               <Text style={styles.fieldLabel}>Ghi chú chi tiết</Text>
               <TextInput
@@ -184,73 +179,26 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               />
             </View>
 
-            {/* Status Segmented Control */}
-            <View style={styles.fieldBlock}>
-              <Text style={styles.fieldLabel}>Trạng thái</Text>
-              <View style={styles.segmentedContainer}>
-                {statusOptions.map((opt) => {
-                  const isSelected = status === opt.value;
-                  return (
-                    <TouchableOpacity
-                      key={opt.value}
-                      style={[styles.segmentButton, isSelected && styles.segmentButtonActive]}
-                      onPress={() => setStatus(opt.value)}
-                      activeOpacity={0.7}
-                    >
-                      <View style={[styles.segmentDot, { backgroundColor: opt.color }]} />
-                      <Text style={[styles.segmentText, isSelected && styles.segmentTextActive]}>
-                        {opt.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
+            {/* Trạng thái công việc */}
+            <SegmentedControl<TaskStatus>
+              label="Trạng thái"
+              options={statusOptions}
+              selectedValue={status}
+              onSelect={setStatus}
+            />
 
-            {/* Priority Segmented Control */}
-            <View style={styles.fieldBlock}>
-              <Text style={styles.fieldLabel}>Mức độ ưu tiên</Text>
-              <View style={styles.segmentedContainer}>
-                {priorityOptions.map((opt) => {
-                  const isSelected = priority === opt.value;
-                  return (
-                    <TouchableOpacity
-                      key={opt.value}
-                      style={[styles.segmentButton, isSelected && styles.segmentButtonActive]}
-                      onPress={() => setPriority(opt.value)}
-                      activeOpacity={0.7}
-                    >
-                      <View style={[styles.segmentDot, { backgroundColor: opt.color }]} />
-                      <Text style={[styles.segmentText, isSelected && styles.segmentTextActive]}>
-                        {opt.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
+            {/* Mức độ ưu tiên */}
+            <SegmentedControl<TaskPriority>
+              label="Mức độ ưu tiên"
+              options={priorityOptions}
+              selectedValue={priority}
+              onSelect={setPriority}
+            />
 
-            {/* Due Date field */}
-            <View style={styles.fieldBlock}>
-              <Text style={styles.fieldLabel}>Hạn hoàn thành (Due Date)</Text>
-              <View style={styles.inputWithIcon}>
-                <Feather
-                  name="calendar"
-                  size={16}
-                  color={colors.textSecondary}
-                  style={styles.fieldIcon}
-                />
-                <TextInput
-                  style={styles.textInputWithIcon}
-                  placeholder="2026-10-15 hoặc Ngày mai..."
-                  placeholderTextColor={colors.textMuted}
-                  value={dueDate}
-                  onChangeText={setDueDate}
-                />
-              </View>
-            </View>
+            {/* Hạn hoàn thành (Due Date Picker trực quan) */}
+            <DueDatePicker value={dueDate} onChange={setDueDate} />
 
-            {/* Action Buttons */}
+            {/* Hàng nút bấm Hành động */}
             <View style={styles.actionRow}>
               <TouchableOpacity
                 style={styles.cancelButton}
@@ -402,74 +350,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textPrimary,
   },
-  textInputWithIcon: {
-    flex: 1,
-    paddingVertical: 11,
-    paddingRight: 14,
-    fontSize: 14,
-    color: colors.textPrimary,
-  },
-  inputWithIcon: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-  },
-  fieldIcon: {
-    paddingLeft: 12,
-    paddingRight: 8,
-  },
   inputError: {
     borderColor: colors.danger,
   },
   textArea: {
     minHeight: 76,
-  },
-  segmentedContainer: {
-    flexDirection: 'row',
-    backgroundColor: colors.surfaceSubtle,
-    borderRadius: 10,
-    padding: 3,
-    gap: 3,
-  },
-  segmentButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-    borderRadius: 8,
-    gap: 6,
-  },
-  segmentButtonActive: {
-    backgroundColor: colors.surface,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.08,
-        shadowRadius: 3,
-      },
-      android: {
-        elevation: 1,
-      },
-    }),
-  },
-  segmentDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  segmentText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
-  segmentTextActive: {
-    color: colors.textPrimary,
-    fontWeight: '700',
   },
   actionRow: {
     flexDirection: 'row',
