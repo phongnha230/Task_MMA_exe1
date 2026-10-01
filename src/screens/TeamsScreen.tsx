@@ -1,6 +1,7 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 
 export const TeamsScreen: React.FC = () => {
@@ -8,24 +9,43 @@ export const TeamsScreen: React.FC = () => {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <View style={styles.iconCircle}>
-          <Text style={styles.icon}>👥</Text>
+          <Feather name="users" size={32} color={colors.primary} />
         </View>
-        <Text style={styles.title}>Teams & Collaboration</Text>
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>COMING SOON</Text>
+
+        <View style={styles.badgePill}>
+          <View style={styles.badgeDot} />
+          <Text style={styles.badgeText}>PHASE 2 PREVIEW</Text>
         </View>
+
+        <Text style={styles.title}>Team Collaboration</Text>
         <Text style={styles.description}>
-          Chức năng phân công công việc theo Đội nhóm (Teams) và Thành viên (Assignees) sẽ được
-          triển khai trong <Text style={styles.highlight}>Practical Exam 2</Text>.
+          Không gian làm việc nhóm, chia sẻ dự án và quản lý quyền hạn thành viên sẽ có mặt trong{' '}
+          <Text style={styles.highlight}>Practical Exam 2</Text>.
         </Text>
-        <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>Dự kiến trường dữ liệu liên kết:</Text>
-          <Text style={styles.infoItem}>
-            • <Text style={styles.code}>teamId</Text>: Định danh nhóm phụ trách
-          </Text>
-          <Text style={styles.infoItem}>
-            • <Text style={styles.code}>assigneeId</Text>: Định danh thành viên thực hiện
-          </Text>
+
+        {/* Feature roadmap cards */}
+        <View style={styles.specBox}>
+          <Text style={styles.specHeading}>Cấu trúc dữ liệu đã sẵn sàng:</Text>
+
+          <View style={styles.featureItem}>
+            <View style={styles.featureIconWrap}>
+              <Feather name="folder" size={14} color={colors.primary} />
+            </View>
+            <View style={styles.featureTextWrap}>
+              <Text style={styles.featureTitle}>teamId</Text>
+              <Text style={styles.featureDesc}>Khóa ngoại liên kết nhóm sở hữu công việc</Text>
+            </View>
+          </View>
+
+          <View style={styles.featureItem}>
+            <View style={styles.featureIconWrap}>
+              <Feather name="user-check" size={14} color={colors.primary} />
+            </View>
+            <View style={styles.featureTextWrap}>
+              <Text style={styles.featureTitle}>assigneeId</Text>
+              <Text style={styles.featureDesc}>Giao việc và thông báo cho từng cá nhân</Text>
+            </View>
+          </View>
         </View>
       </View>
     </SafeAreaView>
@@ -44,71 +64,111 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   iconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
     backgroundColor: colors.primaryLight,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
   },
-  icon: {
-    fontSize: 40,
+  badgePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surfaceSubtle,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 100,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: 6,
+  },
+  badgeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.primary,
+  },
+  badgeText: {
+    color: colors.primary,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.8,
   },
   title: {
     fontSize: 22,
-    fontWeight: '800',
+    fontWeight: '900',
     color: colors.textPrimary,
     marginBottom: 8,
-  },
-  badge: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginBottom: 16,
-  },
-  badgeText: {
-    color: colors.white,
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1,
+    letterSpacing: -0.4,
   },
   description: {
     fontSize: 14,
     color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
-    marginBottom: 24,
+    marginBottom: 28,
     maxWidth: 320,
   },
   highlight: {
-    color: colors.primaryDark,
+    color: colors.primary,
     fontWeight: '700',
   },
-  infoCard: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
+  specBox: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 18,
     borderWidth: 1,
     borderColor: colors.border,
     width: '100%',
-    maxWidth: 320,
+    maxWidth: 330,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
-  infoTitle: {
-    fontSize: 13,
+  specHeading: {
+    fontSize: 12,
     fontWeight: '700',
     color: colors.textPrimary,
-    marginBottom: 8,
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
   },
-  infoItem: {
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 12,
+  },
+  featureIconWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    backgroundColor: colors.surfaceSubtle,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  featureTextWrap: {
+    flex: 1,
+  },
+  featureTitle: {
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
     fontSize: 13,
-    color: colors.textSecondary,
-    marginBottom: 4,
-  },
-  code: {
-    fontFamily: 'monospace',
+    fontWeight: '700',
     color: colors.primary,
-    fontWeight: '600',
+  },
+  featureDesc: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 1,
   },
 });

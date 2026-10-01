@@ -9,8 +9,10 @@ import {
   Alert,
   StatusBar,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
 import { useTasks, StatusFilter } from '../hooks/useTasks';
 import { CreateTaskInput, Task, TaskStatus, UpdateTaskInput } from '../types/task';
 import { TaskCard } from '../components/TaskCard';
@@ -69,12 +71,12 @@ export const HomeScreen: React.FC = () => {
 
   const handleDeleteTask = (id: string, title: string) => {
     Alert.alert(
-      'Xác nhận xóa',
-      `Bạn có chắc chắn muốn xóa công việc "${title}" không? Hành động này không thể hoàn tác.`,
+      'Xóa nhiệm vụ',
+      `Bạn có chắc muốn xóa "${title}" không? Hành động này không thể hoàn tác.`,
       [
         { text: 'Hủy', style: 'cancel' },
         {
-          text: 'Xóa',
+          text: 'Xóa vĩnh viễn',
           style: 'destructive',
           onPress: async () => {
             try {
@@ -89,82 +91,102 @@ export const HomeScreen: React.FC = () => {
     );
   };
 
-  const filterTabs: StatusFilter[] = ['All', 'To Do', 'In Progress', 'Done'];
+  const filterTabs: { label: string; value: StatusFilter; count: number }[] = [
+    { label: 'Tất cả', value: 'All', count: stats.total },
+    { label: 'To Do', value: 'To Do', count: stats.todo },
+    { label: 'In Progress', value: 'In Progress', count: stats.inProgress },
+    { label: 'Done', value: 'Done', count: stats.done },
+  ];
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
 
-      {/* HEADER SECTION */}
+      {/* TOP HEADER */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View>
+            <View style={styles.eyebrowContainer}>
+              <View style={styles.livePulseDot} />
+              <Text style={styles.eyebrowText}>FIRESTORE CLOUD</Text>
+            </View>
             <Text style={styles.appTitle}>Task Manager</Text>
-            <Text style={styles.appSubtitle}>Quản lý công việc hiệu quả • Firebase Firestore</Text>
+            <Text style={styles.appSubtitle}>Đồng bộ thời gian thực • Public CRUD</Text>
           </View>
+
           <TouchableOpacity
             style={styles.createButton}
             onPress={handleOpenCreateModal}
             activeOpacity={0.8}
           >
-            <Text style={styles.createButtonIcon}>＋</Text>
+            <View style={styles.plusIconWrap}>
+              <Feather name="plus" size={14} color={colors.primary} />
+            </View>
             <Text style={styles.createButtonText}>Tạo mới</Text>
           </TouchableOpacity>
         </View>
 
-        {/* METRICS / STATS OVERVIEW */}
-        <View style={styles.statsCard}>
-          <View style={styles.statCol}>
-            <Text style={styles.statCount}>{stats.total}</Text>
-            <Text style={styles.statLabel}>Tổng số</Text>
+        {/* BENTO STATS CARDS */}
+        <View style={styles.bentoRow}>
+          <View style={styles.bentoCard}>
+            <Text style={styles.bentoNumber}>{stats.total}</Text>
+            <Text style={styles.bentoLabel}>Tổng số</Text>
           </View>
-          <View style={styles.statSeparator} />
-          <View style={styles.statCol}>
-            <Text style={[styles.statCount, { color: colors.statusTodo }]}>{stats.todo}</Text>
-            <Text style={styles.statLabel}>To Do</Text>
+
+          <View style={styles.bentoCard}>
+            <Text style={[styles.bentoNumber, { color: colors.statusTodo }]}>{stats.todo}</Text>
+            <Text style={styles.bentoLabel}>To Do</Text>
           </View>
-          <View style={styles.statSeparator} />
-          <View style={styles.statCol}>
-            <Text style={[styles.statCount, { color: colors.statusInProgress }]}>
+
+          <View style={styles.bentoCard}>
+            <Text style={[styles.bentoNumber, { color: colors.statusInProgress }]}>
               {stats.inProgress}
             </Text>
-            <Text style={styles.statLabel}>In Progress</Text>
+            <Text style={styles.bentoLabel}>Đang làm</Text>
           </View>
-          <View style={styles.statSeparator} />
-          <View style={styles.statCol}>
-            <Text style={[styles.statCount, { color: colors.statusDone }]}>{stats.done}</Text>
-            <Text style={styles.statLabel}>Done</Text>
+
+          <View style={styles.bentoCard}>
+            <Text style={[styles.bentoNumber, { color: colors.statusDone }]}>{stats.done}</Text>
+            <Text style={styles.bentoLabel}>Hoàn thành</Text>
           </View>
         </View>
 
         {/* STATUS FILTER PILLS */}
-        <View style={styles.filterBar}>
+        <View style={styles.filterTrack}>
           {filterTabs.map((tab) => {
-            const isActive = statusFilter === tab;
+            const isActive = statusFilter === tab.value;
             return (
               <TouchableOpacity
-                key={tab}
+                key={tab.value}
                 style={[styles.filterPill, isActive && styles.filterPillActive]}
-                onPress={() => setStatusFilter(tab)}
+                onPress={() => setStatusFilter(tab.value)}
+                activeOpacity={0.7}
               >
                 <Text style={[styles.filterPillText, isActive && styles.filterPillTextActive]}>
-                  {tab === 'All' ? 'Tất cả' : tab}
+                  {tab.label}
                 </Text>
+                <View style={[styles.countBadge, isActive && styles.countBadgeActive]}>
+                  <Text style={[styles.countBadgeText, isActive && styles.countBadgeTextActive]}>
+                    {tab.count}
+                  </Text>
+                </View>
               </TouchableOpacity>
             );
           })}
         </View>
       </View>
 
-      {/* TASK LIST SECTION */}
+      {/* TASK LIST OR FEEDBACK STATE */}
       {loading ? (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Đang đồng bộ Firestore (Real-time)...</Text>
+          <Text style={styles.loadingText}>Đang đồng bộ dữ liệu Firestore...</Text>
         </View>
       ) : error ? (
         <View style={styles.centerContainer}>
-          <Text style={styles.errorIcon}>⚠️</Text>
+          <View style={styles.errorIconWrap}>
+            <Feather name="wifi-off" size={28} color={colors.danger} />
+          </View>
           <Text style={styles.errorTitle}>Lỗi kết nối Firebase</Text>
           <Text style={styles.errorText}>{error}</Text>
         </View>
@@ -186,22 +208,30 @@ export const HomeScreen: React.FC = () => {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
+              tintColor={colors.primary}
               colors={[colors.primary]}
             />
           }
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyEmoji}>📋</Text>
+              <View style={styles.emptyIconCircle}>
+                <Feather name="inbox" size={36} color={colors.primary} />
+              </View>
               <Text style={styles.emptyTitle}>
                 {statusFilter === 'All'
                   ? 'Chưa có công việc nào'
-                  : `Không có công việc thuộc "${statusFilter}"`}
+                  : `Không có nhiệm vụ "${statusFilter}"`}
               </Text>
               <Text style={styles.emptyDesc}>
-                {'Nhấn vào nút "Tạo mới" ở góc trên để thêm công việc đầu tiên của bạn.'}
+                Bắt đầu tổ chức công việc của bạn ngay bây giờ bằng cách thêm nhiệm vụ mới.
               </Text>
-              <TouchableOpacity style={styles.emptyActionBtn} onPress={handleOpenCreateModal}>
-                <Text style={styles.emptyActionBtnText}>＋ Thêm công việc ngay</Text>
+              <TouchableOpacity
+                style={styles.emptyActionBtn}
+                onPress={handleOpenCreateModal}
+                activeOpacity={0.8}
+              >
+                <Feather name="plus" size={15} color={colors.primary} style={{ marginRight: 6 }} />
+                <Text style={styles.emptyActionBtnText}>Thêm công việc đầu tiên</Text>
               </TouchableOpacity>
             </View>
           }
@@ -226,22 +256,40 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingTop: 12,
-    paddingBottom: 8,
+    paddingBottom: 10,
     backgroundColor: colors.background,
   },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 16,
+  },
+  eyebrowContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  livePulseDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.success,
+  },
+  eyebrowText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.textSecondary,
+    letterSpacing: 1,
   },
   appTitle: {
-    fontSize: 24,
-    fontWeight: '800',
+    fontSize: 26,
+    fontWeight: '900',
     color: colors.textPrimary,
-    letterSpacing: -0.5,
+    letterSpacing: -0.6,
   },
   appSubtitle: {
     fontSize: 13,
@@ -252,74 +300,91 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.primary,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 12,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 5,
-    elevation: 3,
+    paddingLeft: 8,
+    paddingRight: 14,
+    paddingVertical: 7,
+    borderRadius: 100,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.primary,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.28,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
-  createButtonIcon: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginRight: 4,
+  plusIconWrap: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
   },
   createButtonText: {
     color: colors.white,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
   },
-  statsCard: {
-    flexDirection: 'row',
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    marginBottom: 14,
-  },
-  statCol: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  statCount: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: colors.textPrimary,
-  },
-  statLabel: {
-    fontSize: 11,
-    color: colors.textSecondary,
-    marginTop: 2,
-    fontWeight: '500',
-  },
-  statSeparator: {
-    width: 1,
-    height: '60%',
-    backgroundColor: colors.border,
-  },
-  filterBar: {
+  bentoRow: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 4,
+    marginBottom: 14,
+  },
+  bentoCard: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  bentoNumber: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: colors.textPrimary,
+    letterSpacing: -0.3,
+  },
+  bentoLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  filterTrack: {
+    flexDirection: 'row',
+    backgroundColor: colors.surfaceSubtle,
+    borderRadius: 12,
+    padding: 3,
+    gap: 4,
   },
   filterPill: {
     flex: 1,
-    paddingVertical: 8,
-    borderRadius: 10,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 7,
+    borderRadius: 9,
+    gap: 5,
   },
   filterPillActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: colors.surface,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.08,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
   },
   filterPillText: {
     fontSize: 12,
@@ -327,12 +392,29 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   filterPillTextActive: {
-    color: colors.white,
+    color: colors.textPrimary,
     fontWeight: '700',
   },
+  countBadge: {
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 6,
+    backgroundColor: colors.border,
+  },
+  countBadgeActive: {
+    backgroundColor: colors.primaryLight,
+  },
+  countBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.textSecondary,
+  },
+  countBadgeTextActive: {
+    color: colors.primary,
+  },
   listContent: {
-    paddingHorizontal: 16,
-    paddingTop: 10,
+    paddingHorizontal: 20,
+    paddingTop: 8,
     paddingBottom: 24,
   },
   centerContainer: {
@@ -343,12 +425,17 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 12,
-    fontSize: 14,
+    fontSize: 13,
     color: colors.textSecondary,
   },
-  errorIcon: {
-    fontSize: 32,
-    marginBottom: 8,
+  errorIconWrap: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: colors.dangerBg,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
   },
   errorTitle: {
     fontSize: 16,
@@ -366,31 +453,40 @@ const styles = StyleSheet.create({
     paddingVertical: 48,
     paddingHorizontal: 24,
   },
-  emptyEmoji: {
-    fontSize: 44,
-    marginBottom: 12,
+  emptyIconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: colors.primaryLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   emptyTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
     color: colors.textPrimary,
     marginBottom: 6,
+    letterSpacing: -0.2,
   },
   emptyDesc: {
     fontSize: 13,
     color: colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 18,
-    marginBottom: 18,
+    lineHeight: 19,
+    marginBottom: 20,
+    maxWidth: 280,
   },
   emptyActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: colors.primaryLight,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 10,
   },
   emptyActionBtnText: {
-    color: colors.primaryDark,
+    color: colors.primary,
     fontSize: 13,
     fontWeight: '700',
   },

@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Platform } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { Task, TaskPriority, TaskStatus } from '../types/task';
 import { colors } from '../theme/colors';
 
@@ -11,33 +12,58 @@ interface TaskCardProps {
 }
 
 export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onDelete, onStatusChange }) => {
-  const getPriorityBadge = (priority: TaskPriority) => {
+  const isDone = task.status === 'Done';
+  const isInProgress = task.status === 'In Progress';
+
+  const getPriorityConfig = (priority: TaskPriority) => {
     switch (priority) {
       case 'High':
-        return { bg: colors.priorityHighBg, text: colors.priorityHigh, label: 'High Priority' };
+        return {
+          color: colors.priorityHigh,
+          bg: colors.priorityHighBg,
+          border: colors.priorityHighBorder,
+          label: 'High',
+        };
       case 'Low':
-        return { bg: colors.priorityLowBg, text: colors.priorityLow, label: 'Low Priority' };
+        return {
+          color: colors.priorityLow,
+          bg: colors.priorityLowBg,
+          border: colors.priorityLowBorder,
+          label: 'Low',
+        };
       default:
         return {
+          color: colors.priorityMedium,
           bg: colors.priorityMediumBg,
-          text: colors.priorityMedium,
-          label: 'Medium Priority',
+          border: colors.priorityMediumBorder,
+          label: 'Medium',
         };
     }
   };
 
-  const getStatusBadge = (status: TaskStatus) => {
+  const getStatusConfig = (status: TaskStatus) => {
     switch (status) {
       case 'Done':
-        return { bg: colors.statusDoneBg, text: colors.statusDone, label: 'Done' };
+        return {
+          color: colors.statusDone,
+          bg: colors.statusDoneBg,
+          border: colors.statusDoneBorder,
+          label: 'Done',
+        };
       case 'In Progress':
         return {
+          color: colors.statusInProgress,
           bg: colors.statusInProgressBg,
-          text: colors.statusInProgress,
+          border: colors.statusInProgressBorder,
           label: 'In Progress',
         };
       default:
-        return { bg: colors.statusTodoBg, text: colors.statusTodo, label: 'To Do' };
+        return {
+          color: colors.statusTodo,
+          bg: colors.statusTodoBg,
+          border: colors.statusTodoBorder,
+          label: 'To Do',
+        };
     }
   };
 
@@ -47,203 +73,263 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onDelete, onSt
     return 'To Do';
   };
 
-  const priorityStyle = getPriorityBadge(task.priority);
-  const statusStyle = getStatusBadge(task.status);
-  const isDone = task.status === 'Done';
+  const priorityCfg = getPriorityConfig(task.priority);
+  const statusCfg = getStatusConfig(task.status);
 
   return (
-    <View style={[styles.card, isDone && styles.cardDone]}>
-      <View style={styles.headerRow}>
-        {/* Status quick toggle */}
-        <TouchableOpacity
-          style={[
-            styles.statusToggle,
-            task.status === 'Done' && styles.statusToggleDone,
-            task.status === 'In Progress' && styles.statusToggleInProgress,
-          ]}
-          onPress={() => onStatusChange(task, getNextStatus(task.status))}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.statusToggleIcon}>
-            {task.status === 'Done' ? '✓' : task.status === 'In Progress' ? '⏳' : '○'}
-          </Text>
-        </TouchableOpacity>
-
-        <View style={styles.titleContainer}>
-          <Text style={[styles.title, isDone && styles.titleDone]} numberOfLines={2}>
-            {task.title}
-          </Text>
-        </View>
-
-        {/* Actions */}
-        <View style={styles.actionsRow}>
+    <View style={[styles.outerContainer, isDone && styles.outerContainerDone]}>
+      <View style={styles.card}>
+        {/* Top bar: Status toggle & Title & Actions */}
+        <View style={styles.topRow}>
+          {/* Circular check trigger */}
           <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => onEdit(task)}
-            accessibilityLabel="Edit Task"
+            style={[
+              styles.checkboxCircle,
+              isDone && styles.checkboxCircleDone,
+              isInProgress && styles.checkboxCircleInProgress,
+            ]}
+            onPress={() => onStatusChange(task, isDone ? 'To Do' : 'Done')}
+            activeOpacity={0.7}
           >
-            <Text style={styles.actionIcon}>✏️</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.deleteActionButton]}
-            onPress={() => onDelete(task.id, task.title)}
-            accessibilityLabel="Delete Task"
-          >
-            <Text style={styles.actionIcon}>🗑️</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Description */}
-      {!!task.description && (
-        <Text style={[styles.description, isDone && styles.descriptionDone]} numberOfLines={3}>
-          {task.description}
-        </Text>
-      )}
-
-      {/* Metadata Badges */}
-      <View style={styles.footerRow}>
-        <View style={styles.badgesWrapper}>
-          {/* Status badge */}
-          <TouchableOpacity
-            style={[styles.badge, { backgroundColor: statusStyle.bg }]}
-            onPress={() => onStatusChange(task, getNextStatus(task.status))}
-          >
-            <Text style={[styles.badgeText, { color: statusStyle.text }]}>{statusStyle.label}</Text>
+            {isDone ? (
+              <Feather name="check" size={13} color={colors.white} />
+            ) : isInProgress ? (
+              <View style={styles.inProgressDot} />
+            ) : null}
           </TouchableOpacity>
 
-          {/* Priority badge */}
-          <View style={[styles.badge, { backgroundColor: priorityStyle.bg }]}>
-            <Text style={[styles.badgeText, { color: priorityStyle.text }]}>
-              {priorityStyle.label}
+          {/* Title and metadata */}
+          <View style={styles.titleArea}>
+            <Text style={[styles.taskTitle, isDone && styles.taskTitleDone]} numberOfLines={2}>
+              {task.title}
             </Text>
+          </View>
+
+          {/* Quick action buttons */}
+          <View style={styles.actionGroup}>
+            <TouchableOpacity
+              style={styles.iconBtn}
+              onPress={() => onEdit(task)}
+              activeOpacity={0.6}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Feather name="edit-3" size={15} color={colors.textSecondary} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.iconBtn, styles.deleteBtn]}
+              onPress={() => onDelete(task.id, task.title)}
+              activeOpacity={0.6}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Feather name="trash-2" size={15} color={colors.danger} />
+            </TouchableOpacity>
           </View>
         </View>
 
-        {/* Due date or created date */}
-        {task.dueDate ? (
-          <Text style={styles.dateText}>📅 Due: {task.dueDate}</Text>
-        ) : (
-          <Text style={styles.dateText}>
-            {new Date(task.createdAt).toLocaleDateString([], {
-              month: 'short',
-              day: 'numeric',
-            })}
+        {/* Description body */}
+        {!!task.description && (
+          <Text style={[styles.taskDesc, isDone && styles.taskDescDone]} numberOfLines={2}>
+            {task.description}
           </Text>
         )}
+
+        {/* Bottom Metadata Pills */}
+        <View style={styles.bottomRow}>
+          <View style={styles.pillsContainer}>
+            {/* Status toggle pill */}
+            <TouchableOpacity
+              style={[
+                styles.pill,
+                { backgroundColor: statusCfg.bg, borderColor: statusCfg.border },
+              ]}
+              onPress={() => onStatusChange(task, getNextStatus(task.status))}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.statusDot, { backgroundColor: statusCfg.color }]} />
+              <Text style={[styles.pillText, { color: statusCfg.color }]}>{statusCfg.label}</Text>
+            </TouchableOpacity>
+
+            {/* Priority pill */}
+            <View
+              style={[
+                styles.pill,
+                { backgroundColor: priorityCfg.bg, borderColor: priorityCfg.border },
+              ]}
+            >
+              <View style={[styles.priorityIndicator, { backgroundColor: priorityCfg.color }]} />
+              <Text style={[styles.pillText, { color: priorityCfg.color }]}>
+                {priorityCfg.label}
+              </Text>
+            </View>
+          </View>
+
+          {/* Due date indicator */}
+          <View style={styles.dateBadge}>
+            <Feather
+              name="calendar"
+              size={12}
+              color={task.dueDate ? colors.primary : colors.textMuted}
+            />
+            <Text
+              style={[
+                styles.dateText,
+                !!task.dueDate && { color: colors.primary, fontWeight: '600' },
+              ]}
+            >
+              {task.dueDate
+                ? task.dueDate
+                : new Date(task.createdAt).toLocaleDateString([], {
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+            </Text>
+          </View>
+        </View>
       </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    padding: 16,
+  outerContainer: {
     marginBottom: 12,
+    borderRadius: 16,
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 1.5,
+      },
+    }),
   },
-  cardDone: {
-    backgroundColor: '#F8FAFC',
-    borderColor: '#E2E8F0',
-    opacity: 0.85,
+  outerContainerDone: {
+    backgroundColor: '#FAFBFD',
+    borderColor: colors.borderSubtle,
+    opacity: 0.8,
   },
-  headerRow: {
+  card: {
+    padding: 16,
+  },
+  topRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
-  statusToggle: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    borderWidth: 2,
+  checkboxCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1.5,
     borderColor: colors.textMuted,
+    backgroundColor: colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 10,
+    marginRight: 12,
     marginTop: 2,
   },
-  statusToggleInProgress: {
+  checkboxCircleInProgress: {
     borderColor: colors.statusInProgress,
     backgroundColor: colors.statusInProgressBg,
   },
-  statusToggleDone: {
+  checkboxCircleDone: {
     borderColor: colors.statusDone,
     backgroundColor: colors.statusDone,
   },
-  statusToggleIcon: {
-    fontSize: 12,
-    color: colors.white,
-    fontWeight: 'bold',
+  inProgressDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.statusInProgress,
   },
-  titleContainer: {
+  titleArea: {
     flex: 1,
     paddingRight: 8,
   },
-  title: {
-    fontSize: 16,
+  taskTitle: {
+    fontSize: 15,
     fontWeight: '700',
     color: colors.textPrimary,
-    lineHeight: 22,
+    lineHeight: 21,
+    letterSpacing: -0.2,
   },
-  titleDone: {
+  taskTitleDone: {
     textDecorationLine: 'line-through',
-    color: colors.textSecondary,
+    color: colors.textMuted,
   },
-  actionsRow: {
+  actionGroup: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
-  actionButton: {
-    padding: 6,
+  iconBtn: {
+    width: 30,
+    height: 30,
     borderRadius: 8,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surfaceSubtle,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  deleteActionButton: {
+  deleteBtn: {
     backgroundColor: colors.dangerBg,
   },
-  actionIcon: {
-    fontSize: 14,
-  },
-  description: {
+  taskDesc: {
     fontSize: 13,
     color: colors.textSecondary,
     lineHeight: 18,
-    marginTop: 8,
-    marginBottom: 10,
-    paddingLeft: 36,
+    marginTop: 6,
+    marginBottom: 8,
+    paddingLeft: 34,
   },
-  descriptionDone: {
+  taskDescDone: {
     color: colors.textMuted,
   },
-  footerRow: {
+  bottomRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 8,
-    paddingLeft: 36,
+    marginTop: 10,
+    paddingLeft: 34,
   },
-  badgesWrapper: {
+  pillsContainer: {
     flexDirection: 'row',
-    gap: 8,
-    flexWrap: 'wrap',
+    gap: 6,
+    alignItems: 'center',
   },
-  badge: {
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 3.5,
     borderRadius: 6,
+    borderWidth: 1,
+    gap: 5,
   },
-  badgeText: {
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  priorityIndicator: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  pillText: {
     fontSize: 11,
     fontWeight: '600',
+    letterSpacing: 0.1,
+  },
+  dateBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   dateText: {
     fontSize: 11,

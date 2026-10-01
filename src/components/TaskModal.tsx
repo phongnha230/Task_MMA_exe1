@@ -11,6 +11,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { CreateTaskInput, Task, TaskPriority, TaskStatus, UpdateTaskInput } from '../types/task';
 import { colors } from '../theme/colors';
 
@@ -63,7 +64,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 
   const handleSubmit = async () => {
     if (!title.trim()) {
-      setErrorMessage('Tiêu đề công việc là bắt buộc!');
+      setErrorMessage('Tiêu đề công việc không được để trống.');
       return;
     }
 
@@ -99,42 +100,66 @@ export const TaskModal: React.FC<TaskModalProps> = ({
     }
   };
 
-  const statusOptions: TaskStatus[] = ['To Do', 'In Progress', 'Done'];
-  const priorityOptions: TaskPriority[] = ['Low', 'Medium', 'High'];
+  const statusOptions: { label: string; value: TaskStatus; color: string }[] = [
+    { label: 'To Do', value: 'To Do', color: colors.statusTodo },
+    { label: 'In Progress', value: 'In Progress', color: colors.statusInProgress },
+    { label: 'Done', value: 'Done', color: colors.statusDone },
+  ];
+
+  const priorityOptions: { label: string; value: TaskPriority; color: string }[] = [
+    { label: 'Low', value: 'Low', color: colors.priorityLow },
+    { label: 'Medium', value: 'Medium', color: colors.priorityMedium },
+    { label: 'High', value: 'High', color: colors.priorityHigh },
+  ];
 
   return (
-    <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
+    <Modal visible={visible} animationType="fade" transparent={true} onRequestClose={onClose}>
       <KeyboardAvoidingView
         style={styles.modalOverlay}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={styles.modalContent}>
-          {/* Header */}
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>
-              {isEditMode ? 'Chỉnh Sửa Công Việc' : 'Tạo Công Việc Mới'}
-            </Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Text style={styles.closeBtnText}>✕</Text>
+        <TouchableOpacity style={styles.backdropDismiss} activeOpacity={1} onPress={onClose} />
+
+        <View style={styles.sheetContainer}>
+          {/* Drag Handle Bar */}
+          <View style={styles.dragHandle} />
+
+          {/* Sheet Header */}
+          <View style={styles.sheetHeader}>
+            <View>
+              <Text style={styles.sheetTitle}>
+                {isEditMode ? 'Chỉnh sửa công việc' : 'Tạo công việc mới'}
+              </Text>
+              <Text style={styles.sheetSubtitle}>
+                {isEditMode ? 'Cập nhật tiến độ & thông tin' : 'Thêm nhiệm vụ vào bảng theo dõi'}
+              </Text>
+            </View>
+
+            <TouchableOpacity onPress={onClose} style={styles.closeCircle} activeOpacity={0.7}>
+              <Feather name="x" size={16} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.formScroll}
+          >
             {/* Error banner */}
             {!!errorMessage && (
               <View style={styles.errorBanner}>
-                <Text style={styles.errorBannerText}>⚠️ {errorMessage}</Text>
+                <Feather name="alert-triangle" size={14} color={colors.danger} />
+                <Text style={styles.errorBannerText}>{errorMessage}</Text>
               </View>
             )}
 
             {/* Title field */}
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>
-                Tiêu đề <Text style={styles.requiredAsterisk}>*</Text>
+            <View style={styles.fieldBlock}>
+              <Text style={styles.fieldLabel}>
+                Tiêu đề nhiệm vụ <Text style={styles.asterisk}>*</Text>
               </Text>
               <TextInput
-                style={[styles.input, !!errorMessage && !title.trim() && styles.inputError]}
-                placeholder="Nhập tiêu đề công việc..."
+                style={[styles.textInput, !!errorMessage && !title.trim() && styles.inputError]}
+                placeholder="Ví dụ: Thiết kế giao diện mobile..."
                 placeholderTextColor={colors.textMuted}
                 value={title}
                 onChangeText={(text) => {
@@ -145,11 +170,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             </View>
 
             {/* Description field */}
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Mô tả chi tiết</Text>
+            <View style={styles.fieldBlock}>
+              <Text style={styles.fieldLabel}>Ghi chú chi tiết</Text>
               <TextInput
-                style={[styles.input, styles.textArea]}
-                placeholder="Nhập mô tả thêm (không bắt buộc)..."
+                style={[styles.textInput, styles.textArea]}
+                placeholder="Mô tả các bước cần thực hiện (tuỳ chọn)..."
                 placeholderTextColor={colors.textMuted}
                 value={description}
                 onChangeText={setDescription}
@@ -159,20 +184,22 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               />
             </View>
 
-            {/* Status Selector */}
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Trạng thái</Text>
-              <View style={styles.chipsRow}>
+            {/* Status Segmented Control */}
+            <View style={styles.fieldBlock}>
+              <Text style={styles.fieldLabel}>Trạng thái</Text>
+              <View style={styles.segmentedContainer}>
                 {statusOptions.map((opt) => {
-                  const selected = status === opt;
+                  const isSelected = status === opt.value;
                   return (
                     <TouchableOpacity
-                      key={opt}
-                      style={[styles.chip, selected && styles.chipSelectedPrimary]}
-                      onPress={() => setStatus(opt)}
+                      key={opt.value}
+                      style={[styles.segmentButton, isSelected && styles.segmentButtonActive]}
+                      onPress={() => setStatus(opt.value)}
+                      activeOpacity={0.7}
                     >
-                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-                        {opt}
+                      <View style={[styles.segmentDot, { backgroundColor: opt.color }]} />
+                      <Text style={[styles.segmentText, isSelected && styles.segmentTextActive]}>
+                        {opt.label}
                       </Text>
                     </TouchableOpacity>
                   );
@@ -180,20 +207,22 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               </View>
             </View>
 
-            {/* Priority Selector */}
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Độ ưu tiên</Text>
-              <View style={styles.chipsRow}>
+            {/* Priority Segmented Control */}
+            <View style={styles.fieldBlock}>
+              <Text style={styles.fieldLabel}>Mức độ ưu tiên</Text>
+              <View style={styles.segmentedContainer}>
                 {priorityOptions.map((opt) => {
-                  const selected = priority === opt;
+                  const isSelected = priority === opt.value;
                   return (
                     <TouchableOpacity
-                      key={opt}
-                      style={[styles.chip, selected && styles.chipSelectedWarning]}
-                      onPress={() => setPriority(opt)}
+                      key={opt.value}
+                      style={[styles.segmentButton, isSelected && styles.segmentButtonActive]}
+                      onPress={() => setPriority(opt.value)}
+                      activeOpacity={0.7}
                     >
-                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-                        {opt}
+                      <View style={[styles.segmentDot, { backgroundColor: opt.color }]} />
+                      <Text style={[styles.segmentText, isSelected && styles.segmentTextActive]}>
+                        {opt.label}
                       </Text>
                     </TouchableOpacity>
                   );
@@ -202,32 +231,51 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             </View>
 
             {/* Due Date field */}
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Hạn chót (Due Date)</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="VD: 2026-10-15 hoặc Ngày mai"
-                placeholderTextColor={colors.textMuted}
-                value={dueDate}
-                onChangeText={setDueDate}
-              />
+            <View style={styles.fieldBlock}>
+              <Text style={styles.fieldLabel}>Hạn hoàn thành (Due Date)</Text>
+              <View style={styles.inputWithIcon}>
+                <Feather
+                  name="calendar"
+                  size={16}
+                  color={colors.textSecondary}
+                  style={styles.fieldIcon}
+                />
+                <TextInput
+                  style={styles.textInputWithIcon}
+                  placeholder="2026-10-15 hoặc Ngày mai..."
+                  placeholderTextColor={colors.textMuted}
+                  value={dueDate}
+                  onChangeText={setDueDate}
+                />
+              </View>
             </View>
 
-            {/* Submit & Cancel Buttons */}
-            <View style={styles.buttonRow}>
-              <TouchableOpacity style={styles.cancelButton} onPress={onClose} disabled={loading}>
-                <Text style={styles.cancelButtonText}>Hủy</Text>
+            {/* Action Buttons */}
+            <View style={styles.actionRow}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={onClose}
+                disabled={loading}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.cancelButtonText}>Huỷ bỏ</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.submitButton, loading && styles.submitButtonDisabled]}
                 onPress={handleSubmit}
                 disabled={loading}
+                activeOpacity={0.8}
               >
                 {loading ? (
                   <ActivityIndicator color={colors.white} size="small" />
                 ) : (
-                  <Text style={styles.submitButtonText}>{isEditMode ? 'Cập Nhật' : 'Tạo Mới'}</Text>
+                  <View style={styles.submitInnerRow}>
+                    <Feather name={isEditMode ? 'check' : 'plus'} size={16} color={colors.white} />
+                    <Text style={styles.submitButtonText}>
+                      {isEditMode ? 'Lưu thay đổi' : 'Tạo nhiệm vụ'}
+                    </Text>
+                  </View>
                 )}
               </TouchableOpacity>
             </View>
@@ -241,139 +289,227 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.55)',
+    backgroundColor: colors.overlay,
     justifyContent: 'flex-end',
   },
-  modalContent: {
-    backgroundColor: colors.card,
+  backdropDismiss: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  sheetContainer: {
+    backgroundColor: colors.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === 'ios' ? 36 : 24,
     maxHeight: '90%',
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 12,
+      },
+    }),
   },
-  modalHeader: {
+  dragHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.border,
+    alignSelf: 'center',
+    marginBottom: 14,
+  },
+  sheetHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-    paddingBottom: 12,
+    alignItems: 'flex-start',
+    paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: colors.borderSubtle,
   },
-  modalTitle: {
+  sheetTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.textPrimary,
+    letterSpacing: -0.3,
   },
-  closeBtn: {
-    padding: 6,
-  },
-  closeBtnText: {
-    fontSize: 18,
+  sheetSubtitle: {
+    fontSize: 12,
     color: colors.textSecondary,
+    marginTop: 2,
+  },
+  closeCircle: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: colors.surfaceSubtle,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  formScroll: {
+    paddingTop: 16,
+    paddingBottom: 8,
   },
   errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: colors.dangerBg,
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 14,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.dangerBorder,
+    gap: 8,
   },
   errorBannerText: {
     color: colors.danger,
     fontSize: 13,
     fontWeight: '600',
+    flex: 1,
   },
-  formGroup: {
+  fieldBlock: {
     marginBottom: 16,
   },
-  label: {
-    fontSize: 13,
-    fontWeight: '600',
+  fieldLabel: {
+    fontSize: 12,
+    fontWeight: '700',
     color: colors.textPrimary,
     marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
-  requiredAsterisk: {
+  asterisk: {
     color: colors.danger,
   },
-  input: {
+  textInput: {
     backgroundColor: colors.background,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 10,
+    borderRadius: 12,
     paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingVertical: 11,
     fontSize: 14,
     color: colors.textPrimary,
+  },
+  textInputWithIcon: {
+    flex: 1,
+    paddingVertical: 11,
+    paddingRight: 14,
+    fontSize: 14,
+    color: colors.textPrimary,
+  },
+  inputWithIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+  },
+  fieldIcon: {
+    paddingLeft: 12,
+    paddingRight: 8,
   },
   inputError: {
     borderColor: colors.danger,
   },
   textArea: {
-    minHeight: 80,
+    minHeight: 76,
   },
-  chipsRow: {
+  segmentedContainer: {
     flexDirection: 'row',
-    gap: 8,
+    backgroundColor: colors.surfaceSubtle,
+    borderRadius: 10,
+    padding: 3,
+    gap: 3,
   },
-  chip: {
+  segmentButton: {
     flex: 1,
-    paddingVertical: 9,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
   },
-  chipSelectedPrimary: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+  segmentButtonActive: {
+    backgroundColor: colors.surface,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.08,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
   },
-  chipSelectedWarning: {
-    backgroundColor: colors.priorityMedium,
-    borderColor: colors.priorityMedium,
+  segmentDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
-  chipText: {
-    fontSize: 13,
+  segmentText: {
+    fontSize: 12,
     fontWeight: '600',
     color: colors.textSecondary,
   },
-  chipTextSelected: {
-    color: colors.white,
+  segmentTextActive: {
+    color: colors.textPrimary,
+    fontWeight: '700',
   },
-  buttonRow: {
+  actionRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
     marginTop: 8,
     marginBottom: 10,
   },
   cancelButton: {
     flex: 1,
-    paddingVertical: 13,
-    borderRadius: 10,
+    paddingVertical: 12,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
     alignItems: 'center',
-    backgroundColor: colors.background,
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
   },
   cancelButtonText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
     color: colors.textSecondary,
   },
   submitButton: {
     flex: 2,
-    paddingVertical: 13,
-    borderRadius: 10,
+    paddingVertical: 12,
+    borderRadius: 12,
     backgroundColor: colors.primary,
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  submitInnerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   submitButtonDisabled: {
     opacity: 0.6,
   },
   submitButtonText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
     color: colors.white,
   },
