@@ -5,10 +5,6 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "splash": {
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.nha1905.notion"
@@ -26,6 +22,9 @@
       "eas": {
         "projectId": "35eacc9b-1314-4cc2-896e-8557db0f11dd"
       }
-    }
+    },
+    "plugins": [
+      "expo-font"
+    ]
   }
 }
