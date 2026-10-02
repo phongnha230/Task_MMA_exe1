@@ -35,17 +35,16 @@ export const DueDatePicker: React.FC<DueDatePickerProps> = ({ value, onChange })
     const baseDate = parseDateString(value) || new Date();
 
     if (Platform.OS === 'android') {
-      // Sử dụng onValueChange và onDismiss theo chuẩn mới để không bị cảnh báo deprecated
       DateTimePickerAndroid.open({
         value: baseDate,
         mode: 'date',
         is24Hour: true,
-        onValueChange: (_event: DateTimePickerEvent, selectedDate: Date) => {
+        onValueChange: (_event, selectedDate: Date) => {
           DateTimePickerAndroid.open({
             value: selectedDate,
             mode: 'time',
             is24Hour: true,
-            onValueChange: (_timeEvent: DateTimePickerEvent, selectedTime: Date) => {
+            onValueChange: (_timeEvent, selectedTime: Date) => {
               const finalDate = new Date(selectedDate);
               finalDate.setHours(selectedTime.getHours());
               finalDate.setMinutes(selectedTime.getMinutes());
