@@ -277,6 +277,27 @@ export const TeamDetailScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
+      {/* Action Header bar for Tasks: Hiển thị nút Giao việc khi ở tab công việc */}
+      {activeTab === 'tasks' && (
+        <View style={styles.tasksActionBar}>
+          <Text style={styles.tasksBarTitle}>Danh sách công việc</Text>
+          <TouchableOpacity
+            style={styles.addTeamTaskBtn}
+            onPress={() => {
+              setTaskToEdit(null);
+              setTaskModalVisible(true);
+            }}
+            activeOpacity={0.8}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Giao việc mới cho nhóm"
+          >
+            <Feather name="plus" size={14} color={colors.white} />
+            <Text style={styles.addTeamTaskBtnText}>Giao việc mới</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Tab Content */}
       {activeTab === 'tasks' ? (
         loadingTasks ? (
@@ -333,6 +354,23 @@ export const TeamDetailScreen: React.FC = () => {
           windowSize={7}
           removeClippedSubviews={Platform.OS === 'android'}
         />
+      )}
+
+      {/* Floating Action Button (FAB) khi ở tab công việc */}
+      {activeTab === 'tasks' && tasks.length > 0 && (
+        <TouchableOpacity
+          style={styles.fabBtn}
+          onPress={() => {
+            setTaskToEdit(null);
+            setTaskModalVisible(true);
+          }}
+          activeOpacity={0.85}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Tạo nhiệm vụ mới cho nhóm"
+        >
+          <Feather name="plus" size={24} color={colors.white} />
+        </TouchableOpacity>
       )}
 
       {/* Task Modal for creating task for this team */}
@@ -584,5 +622,54 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: 13,
     fontWeight: '700',
+  },
+  tasksActionBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    marginBottom: 4,
+  },
+  tasksBarTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  addTeamTaskBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+    gap: 5,
+  },
+  addTeamTaskBtnText: {
+    color: colors.white,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  fabBtn: {
+    position: 'absolute',
+    right: 20,
+    bottom: 24,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.35,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
   },
 });
