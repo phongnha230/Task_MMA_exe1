@@ -16,18 +16,12 @@ export const EmptyTaskList: React.FC<EmptyTaskListProps> = ({ statusFilter, onOp
         <Feather name="inbox" size={36} color={colors.primary} />
       </View>
       <Text style={styles.emptyTitle}>
-        {statusFilter === 'All'
-          ? 'Chưa có công việc nào'
-          : `Không có nhiệm vụ "${statusFilter}"`}
+        {statusFilter === 'All' ? 'Chưa có công việc nào' : `Không có nhiệm vụ "${statusFilter}"`}
       </Text>
       <Text style={styles.emptyDesc}>
         Bắt đầu tổ chức công việc của bạn ngay bây giờ bằng cách thêm nhiệm vụ mới.
       </Text>
-      <TouchableOpacity
-        style={styles.emptyActionBtn}
-        onPress={onOpenCreate}
-        activeOpacity={0.8}
-      >
+      <TouchableOpacity style={styles.emptyActionBtn} onPress={onOpenCreate} activeOpacity={0.8}>
         <Feather name="plus" size={15} color={colors.primary} style={{ marginRight: 6 }} />
         <Text style={styles.emptyActionBtnText}>Thêm công việc đầu tiên</Text>
       </TouchableOpacity>

@@ -3,7 +3,7 @@ import { StyleSheet, View, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Feather } from '@expo/vector-icons';
 import { HomeScreen } from '../screens/HomeScreen';
-import { TeamsScreen } from '../screens/TeamsScreen';
+import { TeamsScreen } from '../screens/teams/TeamsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { colors } from '../theme/colors';
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Modal,
   StyleSheet,
@@ -13,6 +13,8 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { CreateTaskInput, Task, TaskPriority, TaskStatus, UpdateTaskInput } from '../types/task';
+import { Team, TeamMember } from '../types/team';
+import { teamService } from '../services/teamService';
 import { colors } from '../theme/colors';
 import { DueDatePicker } from './DueDatePicker';
 import { SegmentedControl, SegmentOption } from './SegmentedControl';
@@ -20,6 +22,10 @@ import { SegmentedControl, SegmentOption } from './SegmentedControl';
 interface TaskModalProps {
   visible: boolean;
   taskToEdit?: Task | null;
+  defaultTeamId?: string | null;
+  defaultTeamName?: string | null;
+  availableTeams?: Team[];
+  teamMembers?: TeamMember[];
   onClose: () => void;
   onSubmitCreate: (data: CreateTaskInput) => Promise<void>;
   onSubmitUpdate: (id: string, data: UpdateTaskInput) => Promise<void>;
@@ -40,6 +46,10 @@ const priorityOptions: SegmentOption<TaskPriority>[] = [
 export const TaskModal: React.FC<TaskModalProps> = ({
   visible,
   taskToEdit,
+  defaultTeamId = null,
+  defaultTeamName = null,
+  availableTeams = [],
+  teamMembers: externalTeamMembers,
   onClose,
   onSubmitCreate,
   onSubmitUpdate,
@@ -51,8 +61,46 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   const [status, setStatus] = useState<TaskStatus>('To Do');
   const [priority, setPriority] = useState<TaskPriority>('Medium');
   const [dueDate, setDueDate] = useState('');
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(defaultTeamId);
+  const [selectedTeamName, setSelectedTeamName] = useState<string | null>(defaultTeamName);
+  const [selectedAssigneeId, setSelectedAssigneeId] = useState<string | null>(null);
+  const [selectedAssigneeName, setSelectedAssigneeName] = useState<string | null>(null);
+  const [loadedMembers, setLoadedMembers] = useState<TeamMember[]>([]);
+
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // Load team members when selectedTeamId changes (if externalTeamMembers not provided)
+  useEffect(() => {
+    if (externalTeamMembers && externalTeamMembers.length > 0) {
+      setLoadedMembers(externalTeamMembers);
+      return;
+    }
+
+    if (selectedTeamId) {
+      const unsub = teamService.subscribeTeamMembers(
+        selectedTeamId,
+        (data) => setLoadedMembers(data),
+        (err) => console.error(err)
+      );
+      return () => unsub();
+    } else {
+      setLoadedMembers([]);
+    }
+  }, [selectedTeamId, externalTeamMembers]);
+
+  const resetForm = useCallback(() => {
+    setTitle('');
+    setDescription('');
+    setStatus('To Do');
+    setPriority('Medium');
+    setDueDate('');
+    setSelectedTeamId(defaultTeamId);
+    setSelectedTeamName(defaultTeamName);
+    setSelectedAssigneeId(null);
+    setSelectedAssigneeName(null);
+    setErrorMessage('');
+  }, [defaultTeamId, defaultTeamName]);
 
   useEffect(() => {
     if (taskToEdit) {
@@ -61,19 +109,38 @@ export const TaskModal: React.FC<TaskModalProps> = ({
       setStatus(taskToEdit.status);
       setPriority(taskToEdit.priority);
       setDueDate(taskToEdit.dueDate || '');
+      setSelectedTeamId(taskToEdit.teamId || defaultTeamId);
+      setSelectedTeamName(taskToEdit.teamName || defaultTeamName);
+      setSelectedAssigneeId(taskToEdit.assigneeId || null);
+      setSelectedAssigneeName(taskToEdit.assigneeName || null);
     } else {
       resetForm();
     }
     setErrorMessage('');
-  }, [taskToEdit, visible]);
+  }, [taskToEdit, visible, defaultTeamId, defaultTeamName, resetForm]);
 
-  const resetForm = () => {
-    setTitle('');
-    setDescription('');
-    setStatus('To Do');
-    setPriority('Medium');
-    setDueDate('');
-    setErrorMessage('');
+  const handleSelectTeam = (team: Team | null) => {
+    if (!team) {
+      setSelectedTeamId(null);
+      setSelectedTeamName(null);
+      setSelectedAssigneeId(null);
+      setSelectedAssigneeName(null);
+    } else {
+      setSelectedTeamId(team.id);
+      setSelectedTeamName(team.name);
+      setSelectedAssigneeId(null);
+      setSelectedAssigneeName(null);
+    }
+  };
+
+  const handleSelectAssignee = (member: TeamMember | null) => {
+    if (!member) {
+      setSelectedAssigneeId(null);
+      setSelectedAssigneeName(null);
+    } else {
+      setSelectedAssigneeId(member.userId);
+      setSelectedAssigneeName(member.userName);
+    }
   };
 
   const handleSubmit = async () => {
@@ -92,6 +159,10 @@ export const TaskModal: React.FC<TaskModalProps> = ({
         status,
         priority,
         dueDate: dueDate.trim() || null,
+        teamId: selectedTeamId,
+        teamName: selectedTeamName,
+        assigneeId: selectedAssigneeId,
+        assigneeName: selectedAssigneeName,
       };
 
       if (isEditMode && taskToEdit) {
@@ -129,7 +200,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                 {isEditMode ? 'Chỉnh sửa công việc' : 'Tạo công việc mới'}
               </Text>
               <Text style={styles.sheetSubtitle}>
-                {isEditMode ? 'Cập nhật tiến độ & thông tin' : 'Thêm nhiệm vụ vào bảng theo dõi'}
+                {isEditMode ? 'Cập nhật tiến độ & người thực hiện' : 'Thêm nhiệm vụ & phân công'}
               </Text>
             </View>
 
@@ -138,8 +209,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             </TouchableOpacity>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.formScroll}>
-            {/* Banner hiển thị lỗi nếu có */}
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.formScroll}
+          >
+            {/* Banner báo lỗi */}
             {!!errorMessage && (
               <View style={styles.errorBanner}>
                 <Feather name="alert-triangle" size={14} color={colors.danger} />
@@ -164,7 +238,118 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               />
             </View>
 
-            {/* Ghi chú chi tiết */}
+            {/* Team Picker (Nếu có availableTeams) */}
+            {availableTeams.length > 0 && !defaultTeamId && (
+              <View style={styles.fieldBlock}>
+                <Text style={styles.fieldLabel}>Gán vào Nhóm (Team)</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.chipScroll}
+                >
+                  <TouchableOpacity
+                    style={[styles.pickerChip, selectedTeamId === null && styles.pickerChipActive]}
+                    onPress={() => handleSelectTeam(null)}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.pickerChipText,
+                        selectedTeamId === null && styles.pickerChipTextActive,
+                      ]}
+                    >
+                      Cá nhân
+                    </Text>
+                  </TouchableOpacity>
+
+                  {availableTeams.map((t) => (
+                    <TouchableOpacity
+                      key={t.id}
+                      style={[
+                        styles.pickerChip,
+                        selectedTeamId === t.id && styles.pickerChipActive,
+                      ]}
+                      onPress={() => handleSelectTeam(t)}
+                      activeOpacity={0.7}
+                    >
+                      <Feather
+                        name="users"
+                        size={12}
+                        color={selectedTeamId === t.id ? colors.white : colors.textSecondary}
+                      />
+                      <Text
+                        style={[
+                          styles.pickerChipText,
+                          selectedTeamId === t.id && styles.pickerChipTextActive,
+                        ]}
+                      >
+                        {t.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+
+            {/* Assignee Picker (Nếu có thành viên trong team) */}
+            {loadedMembers.length > 0 && (
+              <View style={styles.fieldBlock}>
+                <Text style={styles.fieldLabel}>Người thực hiện (Assignee)</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.chipScroll}
+                >
+                  <TouchableOpacity
+                    style={[
+                      styles.pickerChip,
+                      selectedAssigneeId === null && styles.pickerChipActive,
+                    ]}
+                    onPress={() => handleSelectAssignee(null)}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.pickerChipText,
+                        selectedAssigneeId === null && styles.pickerChipTextActive,
+                      ]}
+                    >
+                      Chưa giao
+                    </Text>
+                  </TouchableOpacity>
+
+                  {loadedMembers.map((m) => (
+                    <TouchableOpacity
+                      key={m.userId}
+                      style={[
+                        styles.pickerChip,
+                        selectedAssigneeId === m.userId && styles.pickerChipActive,
+                      ]}
+                      onPress={() => handleSelectAssignee(m)}
+                      activeOpacity={0.7}
+                    >
+                      <Feather
+                        name="user"
+                        size={12}
+                        color={
+                          selectedAssigneeId === m.userId ? colors.white : colors.textSecondary
+                        }
+                      />
+                      <Text
+                        style={[
+                          styles.pickerChipText,
+                          selectedAssigneeId === m.userId && styles.pickerChipTextActive,
+                        ]}
+                      >
+                        {m.userName}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+
+            {/* Mô tả */}
             <View style={styles.fieldBlock}>
               <Text style={styles.fieldLabel}>Ghi chú chi tiết</Text>
               <TextInput
@@ -179,8 +364,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               />
             </View>
 
-            {/* Trạng thái công việc */}
-            <SegmentedControl<TaskStatus>
+            {/* Trạng thái */}
+            <SegmentedControl
               label="Trạng thái"
               options={statusOptions}
               selectedValue={status}
@@ -188,17 +373,20 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             />
 
             {/* Mức độ ưu tiên */}
-            <SegmentedControl<TaskPriority>
+            <SegmentedControl
               label="Mức độ ưu tiên"
               options={priorityOptions}
               selectedValue={priority}
               onSelect={setPriority}
             />
 
-            {/* Hạn hoàn thành (Due Date Picker trực quan) */}
-            <DueDatePicker value={dueDate} onChange={setDueDate} />
+            {/* Hạn hoàn thành */}
+            <View style={styles.fieldBlock}>
+              <Text style={styles.fieldLabel}>Hạn hoàn thành (Due Date)</Text>
+              <DueDatePicker value={dueDate} onChange={setDueDate} />
+            </View>
 
-            {/* Hàng nút bấm Hành động */}
+            {/* Nút hành động */}
             <View style={styles.actionRow}>
               <TouchableOpacity
                 style={styles.cancelButton}
@@ -339,6 +527,35 @@ const styles = StyleSheet.create({
   },
   asterisk: {
     color: colors.danger,
+  },
+  chipScroll: {
+    flexDirection: 'row',
+    marginTop: 2,
+  },
+  pickerChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 10,
+    backgroundColor: colors.surfaceSubtle,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginRight: 8,
+    gap: 6,
+  },
+  pickerChipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  pickerChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  pickerChipTextActive: {
+    color: colors.white,
+    fontWeight: '700',
   },
   textInput: {
     backgroundColor: colors.background,

@@ -153,10 +153,7 @@ export const DueDatePicker: React.FC<DueDatePickerProps> = ({ value, onChange })
               }
             }}
           />
-          <TouchableOpacity
-            style={styles.iosDoneBtn}
-            onPress={() => setShowIosPicker(false)}
-          >
+          <TouchableOpacity style={styles.iosDoneBtn} onPress={() => setShowIosPicker(false)}>
             <Text style={styles.iosDoneBtnText}>Xong</Text>
           </TouchableOpacity>
         </View>

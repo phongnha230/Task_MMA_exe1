@@ -38,11 +38,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
           <Text style={styles.appSubtitle}>Đồng bộ thời gian thực • Public CRUD</Text>
         </View>
 
-        <TouchableOpacity
-          style={styles.createButton}
-          onPress={onOpenCreate}
-          activeOpacity={0.8}
-        >
+        <TouchableOpacity style={styles.createButton} onPress={onOpenCreate} activeOpacity={0.8}>
           <View style={styles.plusIconWrap}>
             <Feather name="plus" size={14} color={colors.primary} />
           </View>

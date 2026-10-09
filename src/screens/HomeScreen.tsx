@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -11,8 +11,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
+import { useAuth } from '../context/AuthContext';
 import { useTasks } from '../hooks/useTasks';
+import { teamService } from '../services/teamService';
 import { CreateTaskInput, Task, TaskStatus, UpdateTaskInput } from '../types/task';
+import { Team } from '../types/team';
 import { TaskCard } from '../components/TaskCard';
 import { TaskModal } from '../components/TaskModal';
 import { HomeHeader } from '../components/HomeHeader';
@@ -20,6 +23,7 @@ import { EmptyTaskList } from '../components/EmptyTaskList';
 import { colors } from '../theme/colors';
 
 export const HomeScreen: React.FC = () => {
+  const { userProfile } = useAuth();
   const {
     tasks,
     loading,
@@ -34,8 +38,19 @@ export const HomeScreen: React.FC = () => {
     handleRefresh,
   } = useTasks();
 
+  const [userTeams, setUserTeams] = useState<Team[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+
+  useEffect(() => {
+    if (!userProfile) return;
+    const unsub = teamService.subscribeUserTeams(
+      userProfile.id,
+      (teams) => setUserTeams(teams),
+      (err) => console.error(err)
+    );
+    return () => unsub();
+  }, [userProfile]);
 
   const handleOpenCreateModal = () => {
     setTaskToEdit(null);
@@ -95,7 +110,7 @@ export const HomeScreen: React.FC = () => {
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
 
-      {/* Header, Thống kê Bento & Bộ lọc */}
+      {/* HEADER SECTION TÁCH BIỆT: Gồm Brand, Thống kê Bento, Bộ lọc Status */}
       <HomeHeader
         stats={stats}
         statusFilter={statusFilter}
@@ -103,7 +118,7 @@ export const HomeScreen: React.FC = () => {
         onOpenCreate={handleOpenCreateModal}
       />
 
-      {/* Danh sách nhiệm vụ */}
+      {/* DANH SÁCH NHIỆM VỤ HOẶC TRẠNG THÁI CHỜ */}
       {loading ? (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -140,10 +155,7 @@ export const HomeScreen: React.FC = () => {
             />
           }
           ListEmptyComponent={
-            <EmptyTaskList
-              statusFilter={statusFilter}
-              onOpenCreate={handleOpenCreateModal}
-            />
+            <EmptyTaskList statusFilter={statusFilter} onOpenCreate={handleOpenCreateModal} />
           }
         />
       )}
@@ -152,6 +164,7 @@ export const HomeScreen: React.FC = () => {
       <TaskModal
         visible={modalVisible}
         taskToEdit={taskToEdit}
+        availableTeams={userTeams}
         onClose={handleCloseModal}
         onSubmitCreate={handleSubmitCreate}
         onSubmitUpdate={handleSubmitUpdate}

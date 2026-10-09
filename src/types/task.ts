@@ -10,8 +10,10 @@ export interface Task {
   dueDate: string | null; // ISO string format (e.g. YYYY-MM-DD) or empty
   createdAt: number; // Milliseconds timestamp
   updatedAt?: number;
-  teamId: string | null; // For Practical Exam 2
-  assigneeId: string | null; // For Practical Exam 2
+  teamId: string | null;
+  teamName?: string | null;
+  assigneeId: string | null;
+  assigneeName?: string | null;
 }
 
 export interface CreateTaskInput {
@@ -21,7 +23,9 @@ export interface CreateTaskInput {
   priority?: TaskPriority;
   dueDate?: string | null;
   teamId?: string | null;
+  teamName?: string | null;
   assigneeId?: string | null;
+  assigneeName?: string | null;
 }
 
 export interface UpdateTaskInput {
@@ -31,7 +35,9 @@ export interface UpdateTaskInput {
   priority?: TaskPriority;
   dueDate?: string | null;
   teamId?: string | null;
+  teamName?: string | null;
   assigneeId?: string | null;
+  assigneeName?: string | null;
 }
 
 export interface TaskStats {

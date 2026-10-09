@@ -1,9 +1,8 @@
 import React from 'react';
-import { Text, View, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Task, TaskPriority, TaskStatus } from '../types/task';
 import { colors } from '../theme/colors';
-import { styles } from './TaskCard.styles';
 
 interface TaskCardProps {
   task: Task;
@@ -12,67 +11,67 @@ interface TaskCardProps {
   onStatusChange: (task: Task, nextStatus: TaskStatus) => void;
 }
 
-const getPriorityConfig = (priority: TaskPriority) => {
-  switch (priority) {
-    case 'High':
-      return {
-        color: colors.priorityHigh,
-        bg: colors.priorityHighBg,
-        border: colors.priorityHighBorder,
-        label: 'High',
-      };
-    case 'Low':
-      return {
-        color: colors.priorityLow,
-        bg: colors.priorityLowBg,
-        border: colors.priorityLowBorder,
-        label: 'Low',
-      };
-    default:
-      return {
-        color: colors.priorityMedium,
-        bg: colors.priorityMediumBg,
-        border: colors.priorityMediumBorder,
-        label: 'Medium',
-      };
-  }
-};
-
-const getStatusConfig = (status: TaskStatus) => {
-  switch (status) {
-    case 'Done':
-      return {
-        color: colors.statusDone,
-        bg: colors.statusDoneBg,
-        border: colors.statusDoneBorder,
-        label: 'Done',
-      };
-    case 'In Progress':
-      return {
-        color: colors.statusInProgress,
-        bg: colors.statusInProgressBg,
-        border: colors.statusInProgressBorder,
-        label: 'In Progress',
-      };
-    default:
-      return {
-        color: colors.statusTodo,
-        bg: colors.statusTodoBg,
-        border: colors.statusTodoBorder,
-        label: 'To Do',
-      };
-  }
-};
-
-const getNextStatus = (current: TaskStatus): TaskStatus => {
-  if (current === 'To Do') return 'In Progress';
-  if (current === 'In Progress') return 'Done';
-  return 'To Do';
-};
-
 export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onDelete, onStatusChange }) => {
   const isDone = task.status === 'Done';
   const isInProgress = task.status === 'In Progress';
+
+  const getPriorityConfig = (priority: TaskPriority) => {
+    switch (priority) {
+      case 'High':
+        return {
+          color: colors.priorityHigh,
+          bg: colors.priorityHighBg,
+          border: colors.priorityHighBorder,
+          label: 'High',
+        };
+      case 'Low':
+        return {
+          color: colors.priorityLow,
+          bg: colors.priorityLowBg,
+          border: colors.priorityLowBorder,
+          label: 'Low',
+        };
+      default:
+        return {
+          color: colors.priorityMedium,
+          bg: colors.priorityMediumBg,
+          border: colors.priorityMediumBorder,
+          label: 'Medium',
+        };
+    }
+  };
+
+  const getStatusConfig = (status: TaskStatus) => {
+    switch (status) {
+      case 'Done':
+        return {
+          color: colors.statusDone,
+          bg: colors.statusDoneBg,
+          border: colors.statusDoneBorder,
+          label: 'Done',
+        };
+      case 'In Progress':
+        return {
+          color: colors.statusInProgress,
+          bg: colors.statusInProgressBg,
+          border: colors.statusInProgressBorder,
+          label: 'In Progress',
+        };
+      default:
+        return {
+          color: colors.statusTodo,
+          bg: colors.statusTodoBg,
+          border: colors.statusTodoBorder,
+          label: 'To Do',
+        };
+    }
+  };
+
+  const getNextStatus = (current: TaskStatus): TaskStatus => {
+    if (current === 'To Do') return 'In Progress';
+    if (current === 'In Progress') return 'Done';
+    return 'To Do';
+  };
 
   const priorityCfg = getPriorityConfig(task.priority);
   const statusCfg = getStatusConfig(task.status);
@@ -102,6 +101,28 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onDelete, onSt
             <Text style={[styles.taskTitle, isDone && styles.taskTitleDone]} numberOfLines={2}>
               {task.title}
             </Text>
+
+            {/* Team and Assignee info row */}
+            {(task.teamName || task.assigneeName) && (
+              <View style={styles.metaRow}>
+                {task.teamName && (
+                  <View style={styles.teamTag}>
+                    <Feather name="users" size={11} color={colors.primary} />
+                    <Text style={styles.teamTagText} numberOfLines={1}>
+                      {task.teamName}
+                    </Text>
+                  </View>
+                )}
+                {task.assigneeName && (
+                  <View style={styles.assigneeTag}>
+                    <Feather name="user" size={11} color={colors.textSecondary} />
+                    <Text style={styles.assigneeTagText} numberOfLines={1}>
+                      {task.assigneeName}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
           </View>
 
           <View style={styles.actionGroup}>
@@ -186,3 +207,185 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onDelete, onSt
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  outerContainer: {
+    marginBottom: 12,
+    borderRadius: 16,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 1.5,
+      },
+    }),
+  },
+  outerContainerDone: {
+    backgroundColor: '#FAFBFD',
+    borderColor: colors.borderSubtle,
+    opacity: 0.8,
+  },
+  card: {
+    padding: 16,
+  },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  checkboxCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    borderColor: colors.textMuted,
+    backgroundColor: colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    marginTop: 2,
+  },
+  checkboxCircleInProgress: {
+    borderColor: colors.statusInProgress,
+    backgroundColor: colors.statusInProgressBg,
+  },
+  checkboxCircleDone: {
+    borderColor: colors.statusDone,
+    backgroundColor: colors.statusDone,
+  },
+  inProgressDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.statusInProgress,
+  },
+  titleArea: {
+    flex: 1,
+    paddingRight: 8,
+  },
+  taskTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    lineHeight: 21,
+    letterSpacing: -0.2,
+  },
+  taskTitleDone: {
+    textDecorationLine: 'line-through',
+    color: colors.textMuted,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 4,
+  },
+  teamTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primaryLight,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    gap: 4,
+  },
+  teamTagText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  assigneeTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surfaceSubtle,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    gap: 4,
+  },
+  assigneeTagText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  actionGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  iconBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    backgroundColor: colors.surfaceSubtle,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteBtn: {
+    backgroundColor: colors.dangerBg,
+  },
+  taskDesc: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    lineHeight: 18,
+    marginTop: 8,
+    marginBottom: 8,
+    paddingLeft: 34,
+  },
+  taskDescDone: {
+    color: colors.textMuted,
+  },
+  bottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 10,
+    paddingLeft: 34,
+  },
+  pillsContainer: {
+    flexDirection: 'row',
+    gap: 6,
+    alignItems: 'center',
+  },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 3.5,
+    borderRadius: 6,
+    borderWidth: 1,
+    gap: 5,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  priorityIndicator: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  pillText: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.1,
+  },
+  dateBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  dateText: {
+    fontSize: 11,
+    color: colors.textMuted,
+    fontWeight: '500',
+  },
+});
