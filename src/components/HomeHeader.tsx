@@ -2,13 +2,16 @@ import React from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
-import { StatusFilter } from '../hooks/useTasks';
+import { StatusFilter, ScopeFilter } from '../hooks/useTasks';
 import { TaskStats } from '../types/task';
 
 interface HomeHeaderProps {
   stats: TaskStats;
   statusFilter: StatusFilter;
   onFilterChange: (filter: StatusFilter) => void;
+  scopeFilter: ScopeFilter;
+  onScopeChange: (scope: ScopeFilter) => void;
+  userDisplayName?: string;
   onOpenCreate: () => void;
 }
 
@@ -16,6 +19,9 @@ const HomeHeaderComponent: React.FC<HomeHeaderProps> = ({
   stats,
   statusFilter,
   onFilterChange,
+  scopeFilter,
+  onScopeChange,
+  userDisplayName,
   onOpenCreate,
 }) => {
   const filterTabs: { label: string; value: StatusFilter; count: number }[] = [
@@ -32,10 +38,12 @@ const HomeHeaderComponent: React.FC<HomeHeaderProps> = ({
         <View>
           <View style={styles.eyebrowContainer}>
             <View style={styles.livePulseDot} />
-            <Text style={styles.eyebrowText}>FIRESTORE CLOUD</Text>
+            <Text style={styles.eyebrowText}>
+              {userDisplayName ? `XIN CHÀO, ${userDisplayName.toUpperCase()}` : 'FIRESTORE CLOUD'}
+            </Text>
           </View>
           <Text style={styles.appTitle}>Task Manager</Text>
-          <Text style={styles.appSubtitle}>Đồng bộ thời gian thực • Public CRUD</Text>
+          <Text style={styles.appSubtitle}>Đồng bộ thời gian thực • Real-Time Cloud</Text>
         </View>
 
         <TouchableOpacity
@@ -50,6 +58,39 @@ const HomeHeaderComponent: React.FC<HomeHeaderProps> = ({
             <Feather name="plus" size={14} color={colors.primary} />
           </View>
           <Text style={styles.createButtonText}>Tạo mới</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Scope Selector: Tất cả vs Việc của tôi */}
+      <View style={styles.scopeContainer}>
+        <TouchableOpacity
+          style={[styles.scopeBtn, scopeFilter === 'all' && styles.scopeBtnActive]}
+          onPress={() => onScopeChange('all')}
+          activeOpacity={0.7}
+        >
+          <Feather
+            name="globe"
+            size={14}
+            color={scopeFilter === 'all' ? colors.primary : colors.textMuted}
+          />
+          <Text style={[styles.scopeBtnText, scopeFilter === 'all' && styles.scopeBtnTextActive]}>
+            Tất cả nhiệm vụ
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.scopeBtn, scopeFilter === 'my' && styles.scopeBtnActive]}
+          onPress={() => onScopeChange('my')}
+          activeOpacity={0.7}
+        >
+          <Feather
+            name="user-check"
+            size={14}
+            color={scopeFilter === 'my' ? colors.primary : colors.textMuted}
+          />
+          <Text style={[styles.scopeBtnText, scopeFilter === 'my' && styles.scopeBtnTextActive]}>
+            Việc của tôi
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -185,6 +226,46 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: 13,
     fontWeight: '700',
+  },
+  scopeContainer: {
+    flexDirection: 'row',
+    backgroundColor: colors.surfaceSubtle,
+    borderRadius: 14,
+    padding: 4,
+    marginBottom: 14,
+    gap: 6,
+  },
+  scopeBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 9,
+    borderRadius: 10,
+    gap: 6,
+  },
+  scopeBtnActive: {
+    backgroundColor: colors.surface,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  scopeBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textMuted,
+  },
+  scopeBtnTextActive: {
+    fontWeight: '700',
+    color: colors.textPrimary,
   },
   bentoRow: {
     flexDirection: 'row',

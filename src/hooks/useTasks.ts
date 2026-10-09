@@ -3,12 +3,14 @@ import { CreateTaskInput, Task, TaskStats, TaskStatus, UpdateTaskInput } from '.
 import { taskService } from '../services/taskService';
 
 export type StatusFilter = 'All' | TaskStatus;
+export type ScopeFilter = 'all' | 'my';
 
-export const useTasks = () => {
+export const useTasks = (currentUserId?: string | null) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');
+  const [scopeFilter, setScopeFilter] = useState<ScopeFilter>('all');
   const [refreshing, setRefreshing] = useState(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -40,31 +42,39 @@ export const useTasks = () => {
     return () => unsubscribe();
   }, []);
 
-  const filteredTasks = useMemo(() => {
-    if (statusFilter === 'All') return tasks;
-    return tasks.filter((t) => t.status === statusFilter);
-  }, [tasks, statusFilter]);
+  // Filter tasks based on scope (Tất cả vs Việc của tôi: được gán HOẶC do mình tạo)
+  const scopedTasks = useMemo(() => {
+    if (scopeFilter === 'all' || !currentUserId) return tasks;
+    return tasks.filter(
+      (t) => t.assigneeId === currentUserId || t.createdById === currentUserId
+    );
+  }, [tasks, scopeFilter, currentUserId]);
 
-  // Single-pass O(N) statistics aggregation
+  const filteredTasks = useMemo(() => {
+    if (statusFilter === 'All') return scopedTasks;
+    return scopedTasks.filter((t) => t.status === statusFilter);
+  }, [scopedTasks, statusFilter]);
+
+  // Single-pass O(N) statistics aggregation based on scoped tasks
   const stats: TaskStats = useMemo(() => {
     let todo = 0;
     let inProgress = 0;
     let done = 0;
 
-    for (let i = 0; i < tasks.length; i++) {
-      const s = tasks[i].status;
+    for (let i = 0; i < scopedTasks.length; i++) {
+      const s = scopedTasks[i].status;
       if (s === 'To Do') todo++;
       else if (s === 'In Progress') inProgress++;
       else if (s === 'Done') done++;
     }
 
     return {
-      total: tasks.length,
+      total: scopedTasks.length,
       todo,
       inProgress,
       done,
     };
-  }, [tasks]);
+  }, [scopedTasks]);
 
   const createTask = useCallback(async (input: CreateTaskInput) => {
     return await taskService.createTask(input);
@@ -94,6 +104,8 @@ export const useTasks = () => {
     refreshing,
     statusFilter,
     setStatusFilter,
+    scopeFilter,
+    setScopeFilter,
     stats,
     createTask,
     updateTask,

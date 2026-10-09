@@ -18,6 +18,7 @@ import { teamService } from '../services/teamService';
 import { colors } from '../theme/colors';
 import { DueDatePicker } from './DueDatePicker';
 import { SegmentedControl, SegmentOption } from './SegmentedControl';
+import { useAuth } from '../context/AuthContext';
 
 interface TaskModalProps {
   visible: boolean;
@@ -54,6 +55,7 @@ const TaskModalComponent: React.FC<TaskModalProps> = ({
   onSubmitCreate,
   onSubmitUpdate,
 }) => {
+  const { userProfile } = useAuth();
   const isEditMode = !!taskToEdit;
 
   const [title, setTitle] = useState('');
@@ -163,6 +165,8 @@ const TaskModalComponent: React.FC<TaskModalProps> = ({
         teamName: selectedTeamName,
         assigneeId: selectedAssigneeId,
         assigneeName: selectedAssigneeName,
+        createdById: isEditMode ? undefined : userProfile?.id || null,
+        createdByName: isEditMode ? undefined : userProfile?.name || null,
       };
 
       if (isEditMode && taskToEdit) {

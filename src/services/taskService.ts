@@ -58,6 +58,8 @@ class TaskService {
             teamName: data.teamName || null,
             assigneeId: data.assigneeId || null,
             assigneeName: data.assigneeName || null,
+            createdById: data.createdById || null,
+            createdByName: data.createdByName || null,
           };
         });
         onSuccess(tasks);
@@ -114,6 +116,8 @@ class TaskService {
             teamName: data.teamName || null,
             assigneeId: data.assigneeId || null,
             assigneeName: data.assigneeName || null,
+            createdById: data.createdById || null,
+            createdByName: data.createdByName || null,
           };
         });
 
@@ -144,6 +148,8 @@ class TaskService {
       teamName: input.teamName || null,
       assigneeId: input.assigneeId || null,
       assigneeName: input.assigneeName || null,
+      createdById: input.createdById || null,
+      createdByName: input.createdByName || null,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });

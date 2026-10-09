@@ -33,7 +33,7 @@ export const BottomTabNavigator: React.FC = () => {
           let iconName: keyof typeof Feather.glyphMap = 'check-square';
 
           if (route.name === 'Home') {
-            iconName = 'check-circle';
+            iconName = 'home';
           } else if (route.name === 'Teams') {
             iconName = 'users';
           } else if (route.name === 'Profile') {
@@ -52,7 +52,7 @@ export const BottomTabNavigator: React.FC = () => {
         name="Home"
         component={HomeScreen}
         options={{
-          tabBarLabel: 'Nhiệm vụ',
+          tabBarLabel: 'Home',
         }}
       />
       <Tab.Screen

@@ -14,6 +14,8 @@ export interface Task {
   teamName?: string | null;
   assigneeId: string | null;
   assigneeName?: string | null;
+  createdById?: string | null;
+  createdByName?: string | null;
 }
 
 export interface CreateTaskInput {
@@ -26,6 +28,8 @@ export interface CreateTaskInput {
   teamName?: string | null;
   assigneeId?: string | null;
   assigneeName?: string | null;
+  createdById?: string | null;
+  createdByName?: string | null;
 }
 
 export interface UpdateTaskInput {

@@ -32,12 +32,14 @@ export const HomeScreen: React.FC = () => {
     refreshing,
     statusFilter,
     setStatusFilter,
+    scopeFilter,
+    setScopeFilter,
     stats,
     createTask,
     updateTask,
     deleteTask,
     handleRefresh,
-  } = useTasks();
+  } = useTasks(userProfile?.id);
 
   const [userTeams, setUserTeams] = useState<Team[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -137,11 +139,14 @@ export const HomeScreen: React.FC = () => {
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
 
-      {/* HEADER SECTION TÁCH BIỆT: Gồm Brand, Thống kê Bento, Bộ lọc Status */}
+      {/* HEADER SECTION TÁCH BIỆT: Gồm Brand, Chuyển Scope, Thống kê Bento, Bộ lọc Status */}
       <HomeHeader
         stats={stats}
         statusFilter={statusFilter}
         onFilterChange={setStatusFilter}
+        scopeFilter={scopeFilter}
+        onScopeChange={setScopeFilter}
+        userDisplayName={userProfile?.name}
         onOpenCreate={handleOpenCreateModal}
       />
 
