@@ -1,6 +1,7 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import * as FirebaseAuth from 'firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
  * CẤU HÌNH FIREBASE DỰ ÁN: todo-19cde
@@ -26,7 +27,21 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 // Khởi tạo Cloud Firestore
 export const firestore = getFirestore(app);
 
-// Khởi tạo Firebase Authentication
-export const auth = getAuth(app);
+// Khởi tạo Firebase Authentication an toàn với AsyncStorage persistence cho React Native
+let authInstance: FirebaseAuth.Auth;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const getPersistence = (FirebaseAuth as any).getReactNativePersistence;
+  const persistence = typeof getPersistence === 'function' ? getPersistence(AsyncStorage) : undefined;
+
+  authInstance = persistence
+    ? FirebaseAuth.initializeAuth(app, { persistence })
+    : FirebaseAuth.getAuth(app);
+} catch {
+  // Tránh lỗi tái khởi tạo khi Metro Fast Refresh / Hot Reload
+  authInstance = FirebaseAuth.getAuth(app);
+}
+
+export const auth = authInstance;
 
 export default app;
