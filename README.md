@@ -1,146 +1,210 @@
-# Task Management App (Practical Exam 1)
+# Task Management App (Practical Exam 1 & 2)
 
-A mobile Task Management application built with **React Native (Expo)**, **TypeScript**, and **Firebase Cloud Firestore**.
+A production-grade mobile Task Management application built with **React Native (Expo)**, **TypeScript**, **Firebase Authentication**, and **Cloud Firestore**.
 
----
-
-## 📱 Features
-
-- **Public Task CRUD (No Authentication required)**:
-  - **Create Task**: Form & modal with client-side validation (title, description, status, priority, due date).
-  - **Read Tasks**: Real-time synchronization using Firestore `onSnapshot` listener.
-  - **Edit Task**: Update task title, description, priority, and status with pre-filled modal.
-  - **Delete Task**: Confirmation prompt before removing task permanently from Firestore.
-- **Bottom Tab Navigation**:
-  - **Home**: Main task manager with stats counter, status filter, and realtime task list.
-  - **Teams**: "Coming Soon" placeholder screen for team collaboration (Exam 2).
-  - **Profile**: "Coming Soon" placeholder screen for user profile & authentication (Exam 2).
-- **Status Filter**: Filter tasks by `All`, `To Do`, `In Progress`, and `Done`.
-- **Responsive Layout**: Clean modern UI supporting phone and tablet form-factors.
-- **Pull-to-refresh**: Visual refresh indicator on the task list.
+Designed with **Linear-tier & Apple Human Interface Guidelines** (ultra-clean minimalism, high-contrast typography, hairline borders, and Feather vector icons).
 
 ---
 
-## 🛠️ Tech Stack
+## 📱 Features (Exam 1 & Exam 2)
 
-- **Framework**: React Native with Expo (SDK 57)
-- **Language**: TypeScript
-- **Navigation**: React Navigation (Bottom Tabs v7)
-- **Database**: Firebase Cloud Firestore
-- **Code Quality**: ESLint, Prettier, GitHub Actions CI
+### 🔐 1. Firebase Authentication (Exam 2)
+- **Sign Up**: Register with Full Name, Email, and Password. Creates a Firebase Auth user and a matching profile document in the `users` collection.
+- **Login**: Email & Password sign-in with clear error handling.
+- **Persisted Session**: Automatically restores user session on app launch via `onAuthStateChanged`.
+- **Protected Navigation**: Unauthenticated users are gated behind Login / SignUp screens.
+- **Profile & Logout**: View user details (Name, Email, UID) and securely sign out with one click.
+
+### 👥 2. Real Teams & Collaboration (Exam 2)
+- **Create Team**: Generate a new team with Name, Description, and an auto-generated 6-character invitation code.
+- **Join Team**: Enter a 6-character team code to instantly become a member.
+- **Team Detail Screen**:
+  - View team details and share invitation code.
+  - View all team members with their roles (`owner` vs `member`).
+  - View all tasks assigned to the team.
+  - Quick action button to enter the **Team Real-Time Chat**.
+
+### 💬 3. Real-Time Team Chat (Exam 2)
+- **One Chat per Team**: Dedicated real-time communication channel for each team.
+- **Firestore Subcollection**: Messages stored in `teams/{teamId}/messages`.
+- **Real-Time Sync**: Subscribed via `onSnapshot` listener (instant message delivery without polling).
+- **Interactive UI**: Linear-style chat bubbles with distinct styling for sender vs others, timestamps, and smooth auto-scroll.
+
+### 📋 4. Task Management & Assignment (Exam 1 & 2)
+- **Create & Edit Tasks**: Modal form with client-side validation.
+- **Assignment**: Link tasks to a specific **Team** (`teamId`) and assign to a specific **Team Member** (`assigneeId`).
+- **Real-Time Task List**: Real-time Firestore sync with status filtering (`All`, `To Do`, `In Progress`, `Done`).
+- **Pull-to-refresh & Quick Status Toggle**: Intuitive one-tap status completion and refresh.
 
 ---
 
-## 🗄️ Firestore Data Model (ERD)
-
-The database uses the `tasks` collection in Cloud Firestore.
+## 🗄️ Database Architecture & ERD (Entity Relationship Diagram)
 
 ```mermaid
 erDiagram
+    USERS ||--o{ TEAM_MEMBERS : "joins"
+    USERS ||--o{ TEAMS : "owns"
+    USERS ||--o{ TASKS : "assigned_to"
+    TEAMS ||--o{ TEAM_MEMBERS : "has"
+    TEAMS ||--o{ TASKS : "contains"
+    TEAMS ||--o{ MESSAGES : "hosts"
+
+    USERS {
+        string id PK "Firebase Auth UID"
+        string name "User full name"
+        string email "User email address"
+        string avatarUrl "Profile image URL (nullable)"
+        number createdAt "Creation timestamp"
+    }
+
+    TEAMS {
+        string id PK "Team document ID"
+        string name "Team name"
+        string description "Team goal/description"
+        string code "6-character join code"
+        string ownerId FK "Creator UID"
+        string ownerName "Creator name"
+        number createdAt "Creation timestamp"
+    }
+
+    TEAM_MEMBERS {
+        string id PK "teamId_userId"
+        string teamId FK "References TEAMS"
+        string userId FK "References USERS"
+        string userName "Member full name"
+        string userEmail "Member email"
+        string role "'owner' | 'member'"
+        number joinedAt "Joined timestamp"
+    }
+
     TASKS {
-        string id PK "Document ID (Auto-generated)"
-        string title "Task Title (Required)"
-        string description "Detailed description (Optional)"
+        string id PK "Auto-generated task ID"
+        string title "Task title (Required)"
+        string description "Task description"
         string status "'To Do' | 'In Progress' | 'Done'"
         string priority "'Low' | 'Medium' | 'High'"
-        string dueDate "Due date string (Optional)"
-        number createdAt "Creation timestamp (Server timestamp)"
-        number updatedAt "Last updated timestamp"
-        string teamId "Team reference ID (Nullable, for Exam 2)"
-        string assigneeId "Assignee user ID (Nullable, for Exam 2)"
+        string dueDate "Due date string (YYYY-MM-DD)"
+        string teamId FK "References TEAMS (nullable)"
+        string teamName "Denormalized team name"
+        string assigneeId FK "References USERS (nullable)"
+        string assigneeName "Denormalized assignee name"
+        number createdAt "Creation timestamp"
+        number updatedAt "Updated timestamp"
+    }
+
+    MESSAGES {
+        string id PK "Message ID in teams/{teamId}/messages"
+        string senderId FK "References USERS"
+        string senderName "Sender display name"
+        string senderEmail "Sender email"
+        string text "Message content"
+        number createdAt "Server timestamp"
     }
 ```
 
-### Document Fields Reference:
+---
 
-| Field         | Type                                 | Description                                 |
-| ------------- | ------------------------------------ | ------------------------------------------- |
-| `id`          | `string`                             | Auto-generated document ID in Firestore     |
-| `title`       | `string`                             | Title of the task (Required)                |
-| `description` | `string`                             | Detailed note / task description (Optional) |
-| `status`      | `'To Do' \| 'In Progress' \| 'Done'` | Current progress of the task                |
-| `priority`    | `'Low' \| 'Medium' \| 'High'`        | Priority classification                     |
-| `dueDate`     | `string \| null`                     | Deadline date string (e.g. `2026-10-15`)    |
-| `createdAt`   | `Timestamp / number`                 | Timestamp of task creation                  |
-| `updatedAt`   | `Timestamp / number`                 | Timestamp of last modification              |
-| `teamId`      | `string \| null`                     | Reserved for Practical Exam 2               |
-| `assigneeId`  | `string \| null`                     | Reserved for Practical Exam 2               |
+## 🛡️ Firestore Security Rules (`firestore.rules`)
+
+```javascript
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId);
+    }
+
+    match /tasks/{taskId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /teams/{teamId} {
+      allow read, write: if isAuthenticated();
+
+      match /messages/{messageId} {
+        allow read, write: if isAuthenticated();
+      }
+    }
+
+    match /teamMembers/{memberId} {
+      allow read, write: if isAuthenticated();
+    }
+  }
+}
+```
 
 ---
 
 ## 📂 Project Structure
 
 ```
-├── .github/
-│   └── workflows/
-│       └── ci.yml               # GitHub Actions CI (lint & type-check)
-├── assets/                      # Application icons and splash images
 ├── src/
 │   ├── components/
-│   │   ├── TaskCard.tsx         # Task item card with actions
-│   │   └── TaskModal.tsx        # Create & Edit modal form with validation
+│   │   ├── DueDatePicker.tsx          # Date selection modal
+│   │   ├── EmptyTaskList.tsx          # Clean empty state widget
+│   │   ├── HomeHeader.tsx             # Stats bento & filter pills
+│   │   ├── SegmentedControl.tsx       # Status & priority controls
+│   │   ├── TaskCard.tsx               # Task card with team & assignee tag
+│   │   └── TaskModal.tsx              # Task modal with team & member pickers
 │   ├── config/
-│   │   └── firebaseConfig.example.ts  # Config template
+│   │   └── firebase.ts                # Firebase Auth & Firestore init
+│   ├── context/
+│   │   └── AuthContext.tsx            # Firebase Auth state & provider
 │   ├── hooks/
-│   │   └── useTasks.ts          # State management & realtime sync hook
+│   │   └── useTasks.ts                # Real-time task hook
 │   ├── navigation/
-│   │   └── BottomTabNavigator.tsx     # React Navigation bottom tabs
+│   │   ├── BottomTabNavigator.tsx     # Home, Teams, Profile tabs
+│   │   └── RootNavigator.tsx          # Auth stack vs App stack gate
 │   ├── screens/
-│   │   ├── HomeScreen.tsx       # Main task dashboard screen
-│   │   ├── TeamsScreen.tsx      # Teams Coming Soon placeholder
-│   │   └── ProfileScreen.tsx    # Profile Coming Soon placeholder
+│   │   ├── auth/
+│   │   │   ├── LoginScreen.tsx        # Sign-in screen
+│   │   │   └── SignUpScreen.tsx       # Registration screen
+│   │   ├── chat/
+│   │   │   └── ChatScreen.tsx         # Real-time team messaging
+│   │   ├── teams/
+│   │   │   ├── TeamsScreen.tsx        # Team list, create & join by code
+│   │   │   └── TeamDetailScreen.tsx   # Team members, tasks & chat entry
+│   │   ├── HomeScreen.tsx             # Dashboard task list
+│   │   └── ProfileScreen.tsx          # User profile & logout
 │   ├── services/
-│   │   ├── firebase.ts          # Firebase app and Firestore init
-│   │   └── taskService.ts       # Firestore CRUD operations
+│   │   ├── chatService.ts             # Firestore messages subcollection
+│   │   ├── taskService.ts             # Tasks CRUD & team query
+│   │   ├── teamService.ts             # Teams & membership operations
+│   │   └── userService.ts             # User profiles management
 │   ├── theme/
-│   │   └── colors.ts            # Color palette tokens
-│   └── types/
-│       └── task.ts              # TypeScript models and DTOs
-├── .env.example                 # Environment variables template
-├── .eslintrc.js                 # ESLint rules
-├── .prettierrc                  # Prettier formatting rules
-├── App.tsx                      # Root component
+│   │   └── colors.ts                  # Linear design tokens
+│   └── types/                         # TypeScript interfaces
+├── firestore.rules                    # Security rules configuration
+├── EXAM_REPORT_GUIDE.md               # Practical Exam 1 report template
+├── EXAM2_REPORT_GUIDE.md              # Practical Exam 2 report template
+├── App.tsx                            # Root application entry
 └── package.json
 ```
 
 ---
 
-## 🚀 Getting Started
-
-### 1. Prerequisites
-
-- Node.js (v18 or v20 recommended)
-- Expo Go app on mobile device or Android/iOS Emulator
-
-### 2. Installation
+## 🚀 Running the App
 
 ```bash
+# 1. Install dependencies
 npm install
-```
 
-### 3. Setup Firebase
-
-Copy `.env.example` to `.env` or verify configuration in `src/services/firebase.ts`.
-
-### 4. Run the Application
-
-```bash
+# 2. Run with Expo
 npx expo start
-```
 
-- Press `a` for Android Emulator.
-- Press `w` for Web preview.
-- Scan QR code with **Expo Go** on a physical phone.
-
-### 5. Quality Checks
-
-```bash
-# TypeScript type check
+# 3. Check code quality
 npm run type-check
-
-# ESLint check
 npm run lint
-
-# Code formatter
 npm run format
 ```
