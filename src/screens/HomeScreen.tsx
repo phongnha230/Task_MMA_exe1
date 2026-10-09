@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -8,6 +8,7 @@ import {
   Alert,
   StatusBar,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -52,59 +53,85 @@ export const HomeScreen: React.FC = () => {
     return () => unsub();
   }, [userProfile]);
 
-  const handleOpenCreateModal = () => {
+  const handleOpenCreateModal = useCallback(() => {
     setTaskToEdit(null);
     setModalVisible(true);
-  };
+  }, []);
 
-  const handleOpenEditModal = (task: Task) => {
+  const handleOpenEditModal = useCallback((task: Task) => {
     setTaskToEdit(task);
     setModalVisible(true);
-  };
+  }, []);
 
-  const handleCloseModal = () => {
+  const handleCloseModal = useCallback(() => {
     setModalVisible(false);
     setTaskToEdit(null);
-  };
+  }, []);
 
-  const handleSubmitCreate = async (input: CreateTaskInput) => {
-    await createTask(input);
-  };
+  const handleSubmitCreate = useCallback(
+    async (input: CreateTaskInput) => {
+      await createTask(input);
+    },
+    [createTask]
+  );
 
-  const handleSubmitUpdate = async (id: string, input: UpdateTaskInput) => {
-    await updateTask(id, input);
-  };
+  const handleSubmitUpdate = useCallback(
+    async (id: string, input: UpdateTaskInput) => {
+      await updateTask(id, input);
+    },
+    [updateTask]
+  );
 
-  const handleQuickStatusChange = async (task: Task, nextStatus: TaskStatus) => {
-    try {
-      await updateTask(task.id, { status: nextStatus });
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Không thể cập nhật trạng thái.';
-      Alert.alert('Lỗi cập nhật', msg);
-    }
-  };
+  const handleQuickStatusChange = useCallback(
+    async (task: Task, nextStatus: TaskStatus) => {
+      try {
+        await updateTask(task.id, { status: nextStatus });
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Không thể cập nhật trạng thái.';
+        Alert.alert('Lỗi cập nhật', msg);
+      }
+    },
+    [updateTask]
+  );
 
-  const handleDeleteTask = (id: string, title: string) => {
-    Alert.alert(
-      'Xóa nhiệm vụ',
-      `Bạn có chắc muốn xóa "${title}" không? Hành động này không thể hoàn tác.`,
-      [
-        { text: 'Hủy', style: 'cancel' },
-        {
-          text: 'Xóa vĩnh viễn',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteTask(id);
-            } catch (err: unknown) {
-              const msg = err instanceof Error ? err.message : 'Không thể xóa công việc.';
-              Alert.alert('Lỗi', msg);
-            }
+  const handleDeleteTask = useCallback(
+    (id: string, title: string) => {
+      Alert.alert(
+        'Xóa nhiệm vụ',
+        `Bạn có chắc muốn xóa "${title}" không? Hành động này không thể hoàn tác.`,
+        [
+          { text: 'Hủy', style: 'cancel' },
+          {
+            text: 'Xóa vĩnh viễn',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await deleteTask(id);
+              } catch (err: unknown) {
+                const msg = err instanceof Error ? err.message : 'Không thể xóa công việc.';
+                Alert.alert('Lỗi', msg);
+              }
+            },
           },
-        },
-      ]
-    );
-  };
+        ]
+      );
+    },
+    [deleteTask]
+  );
+
+  const keyExtractor = useCallback((item: Task) => item.id, []);
+
+  const renderTaskItem = useCallback(
+    ({ item }: { item: Task }) => (
+      <TaskCard
+        task={item}
+        onEdit={handleOpenEditModal}
+        onDelete={handleDeleteTask}
+        onStatusChange={handleQuickStatusChange}
+      />
+    ),
+    [handleOpenEditModal, handleDeleteTask, handleQuickStatusChange]
+  );
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
@@ -135,17 +162,15 @@ export const HomeScreen: React.FC = () => {
       ) : (
         <FlatList
           data={tasks}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <TaskCard
-              task={item}
-              onEdit={handleOpenEditModal}
-              onDelete={handleDeleteTask}
-              onStatusChange={handleQuickStatusChange}
-            />
-          )}
+          keyExtractor={keyExtractor}
+          renderItem={renderTaskItem}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          initialNumToRender={8}
+          maxToRenderPerBatch={10}
+          windowSize={7}
+          removeClippedSubviews={Platform.OS === 'android'}
+          keyboardShouldPersistTaps="handled"
           refreshControl={
             <RefreshControl
               refreshing={refreshing}

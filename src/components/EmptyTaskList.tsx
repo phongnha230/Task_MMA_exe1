@@ -9,7 +9,7 @@ interface EmptyTaskListProps {
   onOpenCreate: () => void;
 }
 
-export const EmptyTaskList: React.FC<EmptyTaskListProps> = ({ statusFilter, onOpenCreate }) => {
+const EmptyTaskListComponent: React.FC<EmptyTaskListProps> = ({ statusFilter, onOpenCreate }) => {
   return (
     <View style={styles.emptyContainer}>
       <View style={styles.emptyIconCircle}>
@@ -21,13 +21,22 @@ export const EmptyTaskList: React.FC<EmptyTaskListProps> = ({ statusFilter, onOp
       <Text style={styles.emptyDesc}>
         Bắt đầu tổ chức công việc của bạn ngay bây giờ bằng cách thêm nhiệm vụ mới.
       </Text>
-      <TouchableOpacity style={styles.emptyActionBtn} onPress={onOpenCreate} activeOpacity={0.8}>
+      <TouchableOpacity
+        style={styles.emptyActionBtn}
+        onPress={onOpenCreate}
+        activeOpacity={0.8}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel="Thêm công việc đầu tiên"
+      >
         <Feather name="plus" size={15} color={colors.primary} style={{ marginRight: 6 }} />
         <Text style={styles.emptyActionBtnText}>Thêm công việc đầu tiên</Text>
       </TouchableOpacity>
     </View>
   );
 };
+
+export const EmptyTaskList = React.memo(EmptyTaskListComponent);
 
 const styles = StyleSheet.create({
   emptyContainer: {

@@ -15,7 +15,7 @@ interface SegmentedControlProps<T> {
   onSelect: (value: T) => void;
 }
 
-export function SegmentedControl<T extends string>({
+function SegmentedControlInner<T extends string>({
   label,
   options,
   selectedValue,
@@ -33,6 +33,10 @@ export function SegmentedControl<T extends string>({
               style={[styles.segmentButton, isSelected && styles.segmentButtonActive]}
               onPress={() => onSelect(opt.value)}
               activeOpacity={0.7}
+              accessible={true}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: isSelected }}
+              accessibilityLabel={`${label}: ${opt.label}`}
             >
               <View style={[styles.segmentDot, { backgroundColor: opt.color }]} />
               <Text style={[styles.segmentText, isSelected && styles.segmentTextActive]}>
@@ -45,6 +49,8 @@ export function SegmentedControl<T extends string>({
     </View>
   );
 }
+
+export const SegmentedControl = React.memo(SegmentedControlInner) as typeof SegmentedControlInner;
 
 const styles = StyleSheet.create({
   container: {

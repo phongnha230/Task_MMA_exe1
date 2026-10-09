@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Share,
   Platform,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
@@ -16,7 +17,7 @@ import { Feather } from '@expo/vector-icons';
 import { teamService } from '../../services/teamService';
 import { taskService } from '../../services/taskService';
 import { TeamMember } from '../../types/team';
-import { Task } from '../../types/task';
+import { Task, TaskStatus } from '../../types/task';
 import { TaskCard } from '../../components/TaskCard';
 import { TaskModal } from '../../components/TaskModal';
 import { RootStackParamList } from '../../navigation/RootNavigator';
@@ -24,6 +25,41 @@ import { colors } from '../../theme/colors';
 
 type TeamDetailRouteProp = RouteProp<RootStackParamList, 'TeamDetail'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+interface MemberCardItemProps {
+  item: TeamMember;
+}
+
+const MemberCardItemComponent: React.FC<MemberCardItemProps> = ({ item }) => {
+  const isOwner = item.role === 'owner';
+  return (
+    <View
+      style={styles.memberCard}
+      accessible={true}
+      accessibilityRole="text"
+      accessibilityLabel={`Thành viên ${item.userName}, vai trò ${isOwner ? 'Trưởng nhóm' : 'Thành viên'}`}
+    >
+      <View style={styles.avatarWrap}>
+        <Text style={styles.avatarInitial}>
+          {item.userName ? item.userName.charAt(0).toUpperCase() : 'U'}
+        </Text>
+      </View>
+
+      <View style={styles.memberInfo}>
+        <Text style={styles.memberName}>{item.userName}</Text>
+        <Text style={styles.memberEmail}>{item.userEmail}</Text>
+      </View>
+
+      <View style={[styles.roleBadge, isOwner ? styles.ownerRole : styles.memberRole]}>
+        <Text style={[styles.roleText, isOwner ? styles.ownerRoleText : styles.memberRoleText]}>
+          {isOwner ? 'Trưởng nhóm' : 'Thành viên'}
+        </Text>
+      </View>
+    </View>
+  );
+};
+
+const MemberCardItem = React.memo(MemberCardItemComponent);
 
 export const TeamDetailScreen: React.FC = () => {
   const route = useRoute<TeamDetailRouteProp>();
@@ -71,7 +107,7 @@ export const TeamDetailScreen: React.FC = () => {
     };
   }, [team.id]);
 
-  const handleShareCode = async () => {
+  const handleShareCode = useCallback(async () => {
     try {
       await Share.share({
         message: `Mời bạn tham gia nhóm "${team.name}" trên Task Management App với mã: ${team.code}`,
@@ -79,35 +115,67 @@ export const TeamDetailScreen: React.FC = () => {
     } catch (err) {
       console.error(err);
     }
-  };
+  }, [team.name, team.code]);
 
-  const handleOpenChat = () => {
+  const handleOpenChat = useCallback(() => {
     navigation.navigate('Chat', { teamId: team.id, teamName: team.name });
-  };
+  }, [navigation, team.id, team.name]);
 
-  const renderMemberItem = ({ item }: { item: TeamMember }) => {
-    const isOwner = item.role === 'owner';
-    return (
-      <View style={styles.memberCard}>
-        <View style={styles.avatarWrap}>
-          <Text style={styles.avatarInitial}>
-            {item.userName ? item.userName.charAt(0).toUpperCase() : 'U'}
-          </Text>
-        </View>
+  const handleEditTask = useCallback((t: Task) => {
+    setTaskToEdit(t);
+    setTaskModalVisible(true);
+  }, []);
 
-        <View style={styles.memberInfo}>
-          <Text style={styles.memberName}>{item.userName}</Text>
-          <Text style={styles.memberEmail}>{item.userEmail}</Text>
-        </View>
-
-        <View style={[styles.roleBadge, isOwner ? styles.ownerRole : styles.memberRole]}>
-          <Text style={[styles.roleText, isOwner ? styles.ownerRoleText : styles.memberRoleText]}>
-            {isOwner ? 'Trưởng nhóm' : 'Thành viên'}
-          </Text>
-        </View>
-      </View>
+  const handleDeleteTask = useCallback((id: string, title: string) => {
+    Alert.alert(
+      'Xóa nhiệm vụ',
+      `Bạn có chắc muốn xóa "${title}" không? Hành động này không thể hoàn tác.`,
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Xóa vĩnh viễn',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await taskService.deleteTask(id);
+            } catch (err: unknown) {
+              const msg = err instanceof Error ? err.message : 'Không thể xóa công việc.';
+              Alert.alert('Lỗi', msg);
+            }
+          },
+        },
+      ]
     );
-  };
+  }, []);
+
+  const handleStatusChange = useCallback(async (t: Task, nextStatus: TaskStatus) => {
+    try {
+      await taskService.updateTask(t.id, { status: nextStatus });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Không thể cập nhật trạng thái.';
+      Alert.alert('Lỗi cập nhật', msg);
+    }
+  }, []);
+
+  const taskKeyExtractor = useCallback((item: Task) => item.id, []);
+  const memberKeyExtractor = useCallback((item: TeamMember) => item.id, []);
+
+  const renderTaskItem = useCallback(
+    ({ item }: { item: Task }) => (
+      <TaskCard
+        task={item}
+        onEdit={handleEditTask}
+        onDelete={handleDeleteTask}
+        onStatusChange={handleStatusChange}
+      />
+    ),
+    [handleEditTask, handleDeleteTask, handleStatusChange]
+  );
+
+  const renderMemberItem = useCallback(
+    ({ item }: { item: TeamMember }) => <MemberCardItem item={item} />,
+    []
+  );
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
@@ -117,6 +185,9 @@ export const TeamDetailScreen: React.FC = () => {
           style={styles.backBtn}
           onPress={() => navigation.goBack()}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Quay lại danh sách nhóm"
         >
           <Feather name="arrow-left" size={22} color={colors.textPrimary} />
         </TouchableOpacity>
@@ -128,7 +199,13 @@ export const TeamDetailScreen: React.FC = () => {
           <Text style={styles.navSubtitle}>Mã nhóm: {team.code}</Text>
         </View>
 
-        <TouchableOpacity style={styles.shareBtn} onPress={handleShareCode}>
+        <TouchableOpacity
+          style={styles.shareBtn}
+          onPress={handleShareCode}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Chia sẻ mã tham gia nhóm"
+        >
           <Feather name="share-2" size={18} color={colors.primary} />
         </TouchableOpacity>
       </View>
@@ -138,7 +215,14 @@ export const TeamDetailScreen: React.FC = () => {
         {!!team.description && <Text style={styles.bannerDesc}>{team.description}</Text>}
 
         {/* Quick CTA to Chat */}
-        <TouchableOpacity style={styles.chatHeroBtn} onPress={handleOpenChat} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={styles.chatHeroBtn}
+          onPress={handleOpenChat}
+          activeOpacity={0.8}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Mở kênh chat nhóm thời gian thực"
+        >
           <View style={styles.chatHeroLeft}>
             <View style={styles.chatIconWrap}>
               <Feather name="message-circle" size={18} color={colors.white} />
@@ -158,6 +242,10 @@ export const TeamDetailScreen: React.FC = () => {
           style={[styles.tabButton, activeTab === 'tasks' && styles.tabButtonActive]}
           onPress={() => setActiveTab('tasks')}
           activeOpacity={0.7}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityState={{ selected: activeTab === 'tasks' }}
+          accessibilityLabel={`Tab công việc của nhóm, ${tasks.length} nhiệm vụ`}
         >
           <Feather
             name="check-square"
@@ -173,6 +261,10 @@ export const TeamDetailScreen: React.FC = () => {
           style={[styles.tabButton, activeTab === 'members' && styles.tabButtonActive]}
           onPress={() => setActiveTab('members')}
           activeOpacity={0.7}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityState={{ selected: activeTab === 'members' }}
+          accessibilityLabel={`Tab thành viên nhóm, ${members.length} người`}
         >
           <Feather
             name="users"
@@ -194,24 +286,15 @@ export const TeamDetailScreen: React.FC = () => {
         ) : (
           <FlatList
             data={tasks}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <TaskCard
-                task={item}
-                onEdit={(t) => {
-                  setTaskToEdit(t);
-                  setTaskModalVisible(true);
-                }}
-                onDelete={async (id) => {
-                  await taskService.deleteTask(id);
-                }}
-                onStatusChange={async (t, nextStatus) => {
-                  await taskService.updateTask(t.id, { status: nextStatus });
-                }}
-              />
-            )}
+            keyExtractor={taskKeyExtractor}
+            renderItem={renderTaskItem}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
+            initialNumToRender={8}
+            maxToRenderPerBatch={10}
+            windowSize={7}
+            removeClippedSubviews={Platform.OS === 'android'}
+            keyboardShouldPersistTaps="handled"
             ListEmptyComponent={
               <View style={styles.emptyBox}>
                 <Feather name="inbox" size={36} color={colors.textMuted} />
@@ -223,6 +306,9 @@ export const TeamDetailScreen: React.FC = () => {
                     setTaskModalVisible(true);
                   }}
                   activeOpacity={0.8}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel="Giao việc đầu tiên cho nhóm"
                 >
                   <Feather name="plus" size={16} color={colors.white} />
                   <Text style={styles.createTaskBtnText}>Giao việc đầu tiên</Text>
@@ -238,10 +324,14 @@ export const TeamDetailScreen: React.FC = () => {
       ) : (
         <FlatList
           data={members}
-          keyExtractor={(item) => item.id}
+          keyExtractor={memberKeyExtractor}
           renderItem={renderMemberItem}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={7}
+          removeClippedSubviews={Platform.OS === 'android'}
         />
       )}
 

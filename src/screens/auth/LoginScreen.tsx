@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -27,7 +27,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignUp }) 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = async () => {
+  const handleLogin = useCallback(async () => {
     const trimmedEmail = email.trim();
     if (!trimmedEmail) {
       setError('Vui lòng nhập địa chỉ email.');
@@ -57,7 +57,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignUp }) 
     } finally {
       setLoading(false);
     }
-  };
+  }, [email, password, signIn]);
 
   return (
     <SafeAreaView style={styles.safeArea}>

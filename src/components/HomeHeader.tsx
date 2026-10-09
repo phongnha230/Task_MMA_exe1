@@ -12,7 +12,7 @@ interface HomeHeaderProps {
   onOpenCreate: () => void;
 }
 
-export const HomeHeader: React.FC<HomeHeaderProps> = ({
+const HomeHeaderComponent: React.FC<HomeHeaderProps> = ({
   stats,
   statusFilter,
   onFilterChange,
@@ -38,7 +38,14 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
           <Text style={styles.appSubtitle}>Đồng bộ thời gian thực • Public CRUD</Text>
         </View>
 
-        <TouchableOpacity style={styles.createButton} onPress={onOpenCreate} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={styles.createButton}
+          onPress={onOpenCreate}
+          activeOpacity={0.8}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Tạo nhiệm vụ mới"
+        >
           <View style={styles.plusIconWrap}>
             <Feather name="plus" size={14} color={colors.primary} />
           </View>
@@ -81,6 +88,10 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
               style={[styles.filterPill, isActive && styles.filterPillActive]}
               onPress={() => onFilterChange(tab.value)}
               activeOpacity={0.7}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityState={{ selected: isActive }}
+              accessibilityLabel={`Lọc theo trạng thái ${tab.label}, hiện có ${tab.count} công việc`}
             >
               <Text style={[styles.filterPillText, isActive && styles.filterPillTextActive]}>
                 {tab.label}
@@ -97,6 +108,8 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
     </View>
   );
 };
+
+export const HomeHeader = React.memo(HomeHeaderComponent);
 
 const styles = StyleSheet.create({
   header: {

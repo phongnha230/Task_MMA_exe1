@@ -43,7 +43,7 @@ const priorityOptions: SegmentOption<TaskPriority>[] = [
   { label: 'High', value: 'High', color: colors.priorityHigh },
 ];
 
-export const TaskModal: React.FC<TaskModalProps> = ({
+const TaskModalComponent: React.FC<TaskModalProps> = ({
   visible,
   taskToEdit,
   defaultTeamId = null,
@@ -616,3 +616,5 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
 });
+
+export const TaskModal = React.memo(TaskModalComponent);

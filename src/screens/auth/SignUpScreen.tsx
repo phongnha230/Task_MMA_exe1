@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -29,7 +29,7 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onNavigateToLogin })
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSignUp = async () => {
+  const handleSignUp = useCallback(async () => {
     const trimmedName = name.trim();
     const trimmedEmail = email.trim();
 
@@ -78,7 +78,7 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onNavigateToLogin })
     } finally {
       setLoading(false);
     }
-  };
+  }, [name, email, password, confirmPassword, signUp]);
 
   return (
     <SafeAreaView style={styles.safeArea}>

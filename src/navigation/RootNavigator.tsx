@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
@@ -22,6 +22,9 @@ export const RootNavigator: React.FC = () => {
   const { user, loading } = useAuth();
   const [authScreen, setAuthScreen] = useState<'login' | 'signup'>('login');
 
+  const handleNavigateToLogin = useCallback(() => setAuthScreen('login'), []);
+  const handleNavigateToSignUp = useCallback(() => setAuthScreen('signup'), []);
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -32,9 +35,9 @@ export const RootNavigator: React.FC = () => {
 
   if (!user) {
     if (authScreen === 'signup') {
-      return <SignUpScreen onNavigateToLogin={() => setAuthScreen('login')} />;
+      return <SignUpScreen onNavigateToLogin={handleNavigateToLogin} />;
     }
-    return <LoginScreen onNavigateToSignUp={() => setAuthScreen('signup')} />;
+    return <LoginScreen onNavigateToSignUp={handleNavigateToSignUp} />;
   }
 
   return (

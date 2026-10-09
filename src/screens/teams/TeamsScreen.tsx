@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -22,6 +22,67 @@ import { RootStackParamList } from '../../navigation/RootNavigator';
 import { colors } from '../../theme/colors';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+interface TeamCardItemProps {
+  item: Team;
+  isOwner: boolean;
+  onPress: (team: Team) => void;
+}
+
+const TeamCardItemComponent: React.FC<TeamCardItemProps> = ({ item, isOwner, onPress }) => (
+  <TouchableOpacity
+    style={styles.teamCard}
+    onPress={() => onPress(item)}
+    activeOpacity={0.7}
+    accessible={true}
+    accessibilityRole="button"
+    accessibilityLabel={`Nhóm ${item.name}, vai trò ${isOwner ? 'Trưởng nhóm' : 'Thành viên'}, mã mời ${item.code}`}
+  >
+    <View style={styles.cardHeader}>
+      <View style={styles.cardIconBox}>
+        <Feather name="users" size={20} color={colors.primary} />
+      </View>
+      <View style={styles.cardTitleBox}>
+        <Text style={styles.teamName} numberOfLines={1}>
+          {item.name}
+        </Text>
+        <View style={styles.roleBadgeRow}>
+          <View style={[styles.roleBadge, isOwner ? styles.ownerBadge : styles.memberBadge]}>
+            <Text
+              style={[
+                styles.roleBadgeText,
+                isOwner ? styles.ownerBadgeText : styles.memberBadgeText,
+              ]}
+            >
+              {isOwner ? 'Trưởng nhóm' : 'Thành viên'}
+            </Text>
+          </View>
+          <Text style={styles.codeBadge}>Mã: {item.code}</Text>
+        </View>
+      </View>
+      <Feather name="chevron-right" size={20} color={colors.textMuted} />
+    </View>
+
+    {!!item.description && (
+      <Text style={styles.teamDesc} numberOfLines={2}>
+        {item.description}
+      </Text>
+    )}
+
+    <View style={styles.cardFooter}>
+      <View style={styles.footerInfo}>
+        <Feather name="user" size={13} color={colors.textMuted} />
+        <Text style={styles.footerText}>Tạo bởi: {item.ownerName || 'Trưởng nhóm'}</Text>
+      </View>
+      <View style={styles.chatAction}>
+        <Text style={styles.chatActionText}>Chi tiết & Chat</Text>
+        <Feather name="arrow-right" size={13} color={colors.primary} />
+      </View>
+    </View>
+  </TouchableOpacity>
+);
+
+const TeamCardItem = React.memo(TeamCardItemComponent);
 
 export const TeamsScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
@@ -59,7 +120,7 @@ export const TeamsScreen: React.FC = () => {
     return () => unsubscribe();
   }, [userProfile]);
 
-  const handleCreateTeam = async () => {
+  const handleCreateTeam = useCallback(async () => {
     if (!teamName.trim()) {
       Alert.alert('Thông báo', 'Vui lòng nhập tên nhóm.');
       return;
@@ -81,9 +142,9 @@ export const TeamsScreen: React.FC = () => {
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [teamName, teamDesc, userProfile]);
 
-  const handleJoinTeam = async () => {
+  const handleJoinTeam = useCallback(async () => {
     if (!joinCode.trim()) {
       Alert.alert('Thông báo', 'Vui lòng nhập mã tham gia nhóm.');
       return;
@@ -102,61 +163,24 @@ export const TeamsScreen: React.FC = () => {
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [joinCode, userProfile]);
 
-  const renderTeamCard = ({ item }: { item: Team }) => {
-    const isOwner = userProfile?.id === item.ownerId;
+  const handleNavigateToTeam = useCallback(
+    (team: Team) => {
+      navigation.navigate('TeamDetail', { team });
+    },
+    [navigation]
+  );
 
-    return (
-      <TouchableOpacity
-        style={styles.teamCard}
-        onPress={() => navigation.navigate('TeamDetail', { team: item })}
-        activeOpacity={0.7}
-      >
-        <View style={styles.cardHeader}>
-          <View style={styles.cardIconBox}>
-            <Feather name="users" size={20} color={colors.primary} />
-          </View>
-          <View style={styles.cardTitleBox}>
-            <Text style={styles.teamName} numberOfLines={1}>
-              {item.name}
-            </Text>
-            <View style={styles.roleBadgeRow}>
-              <View style={[styles.roleBadge, isOwner ? styles.ownerBadge : styles.memberBadge]}>
-                <Text
-                  style={[
-                    styles.roleBadgeText,
-                    isOwner ? styles.ownerBadgeText : styles.memberBadgeText,
-                  ]}
-                >
-                  {isOwner ? 'Trưởng nhóm' : 'Thành viên'}
-                </Text>
-              </View>
-              <Text style={styles.codeBadge}>Mã: {item.code}</Text>
-            </View>
-          </View>
-          <Feather name="chevron-right" size={20} color={colors.textMuted} />
-        </View>
+  const keyExtractor = useCallback((item: Team) => item.id, []);
 
-        {!!item.description && (
-          <Text style={styles.teamDesc} numberOfLines={2}>
-            {item.description}
-          </Text>
-        )}
-
-        <View style={styles.cardFooter}>
-          <View style={styles.footerInfo}>
-            <Feather name="user" size={13} color={colors.textMuted} />
-            <Text style={styles.footerText}>Tạo bởi: {item.ownerName || 'Trưởng nhóm'}</Text>
-          </View>
-          <View style={styles.chatAction}>
-            <Text style={styles.chatActionText}>Chi tiết & Chat</Text>
-            <Feather name="arrow-right" size={13} color={colors.primary} />
-          </View>
-        </View>
-      </TouchableOpacity>
-    );
-  };
+  const renderTeamCard = useCallback(
+    ({ item }: { item: Team }) => {
+      const isOwner = userProfile?.id === item.ownerId;
+      return <TeamCardItem item={item} isOwner={isOwner} onPress={handleNavigateToTeam} />;
+    },
+    [userProfile?.id, handleNavigateToTeam]
+  );
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
@@ -172,6 +196,9 @@ export const TeamsScreen: React.FC = () => {
             style={styles.actionBtnOutline}
             onPress={() => setJoinModalVisible(true)}
             activeOpacity={0.7}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Nhập mã tham gia nhóm"
           >
             <Feather name="log-in" size={15} color={colors.primary} />
             <Text style={styles.actionBtnOutlineText}>Nhập mã</Text>
@@ -181,6 +208,9 @@ export const TeamsScreen: React.FC = () => {
             style={styles.actionBtnPrimary}
             onPress={() => setCreateModalVisible(true)}
             activeOpacity={0.8}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Tạo nhóm làm việc mới"
           >
             <Feather name="plus" size={16} color={colors.white} />
             <Text style={styles.actionBtnPrimaryText}>Tạo nhóm</Text>
@@ -197,10 +227,15 @@ export const TeamsScreen: React.FC = () => {
       ) : (
         <FlatList
           data={teams}
-          keyExtractor={(item) => item.id}
+          keyExtractor={keyExtractor}
           renderItem={renderTeamCard}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          initialNumToRender={8}
+          maxToRenderPerBatch={10}
+          windowSize={7}
+          removeClippedSubviews={Platform.OS === 'android'}
+          keyboardShouldPersistTaps="handled"
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <View style={styles.emptyIconBox}>

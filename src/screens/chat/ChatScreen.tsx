@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
@@ -20,6 +21,47 @@ import { RootStackParamList } from '../../navigation/RootNavigator';
 import { colors } from '../../theme/colors';
 
 type ChatRouteProp = RouteProp<RootStackParamList, 'Chat'>;
+
+interface MessageItemProps {
+  message: ChatMessage;
+  isMe: boolean;
+}
+
+const ChatMessageItemComponent: React.FC<MessageItemProps> = ({ message, isMe }) => {
+  const formattedTime = new Date(message.createdAt).toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  return (
+    <View
+      style={[styles.messageRow, isMe ? styles.myMessageRow : styles.otherMessageRow]}
+      accessible={true}
+      accessibilityRole="text"
+      accessibilityLabel={`${isMe ? 'Tin nhắn của bạn' : message.senderName}: ${message.text}`}
+    >
+      {!isMe && (
+        <View style={styles.senderAvatar}>
+          <Text style={styles.senderAvatarText}>
+            {message.senderName ? message.senderName.charAt(0).toUpperCase() : 'U'}
+          </Text>
+        </View>
+      )}
+
+      <View style={[styles.bubble, isMe ? styles.myBubble : styles.otherBubble]}>
+        {!isMe && <Text style={styles.senderName}>{message.senderName}</Text>}
+        <Text style={[styles.messageText, isMe ? styles.myMessageText : styles.otherMessageText]}>
+          {message.text}
+        </Text>
+        <Text style={[styles.timeText, isMe ? styles.myTimeText : styles.otherTimeText]}>
+          {formattedTime}
+        </Text>
+      </View>
+    </View>
+  );
+};
+
+const ChatMessageItem = React.memo(ChatMessageItemComponent);
 
 export const ChatScreen: React.FC = () => {
   const route = useRoute<ChatRouteProp>();
@@ -51,7 +93,7 @@ export const ChatScreen: React.FC = () => {
     return () => unsubscribe();
   }, [teamId]);
 
-  const handleSendMessage = async () => {
+  const handleSendMessage = useCallback(async () => {
     const textToSend = inputText.trim();
     if (!textToSend || !userProfile || sending) return;
 
@@ -59,42 +101,23 @@ export const ChatScreen: React.FC = () => {
       setSending(true);
       setInputText('');
       await chatService.sendMessage(teamId, userProfile, textToSend);
-    } catch (err) {
-      console.error('Lỗi gửi tin nhắn:', err);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Không thể gửi tin nhắn.';
+      Alert.alert('Lỗi gửi tin nhắn', msg);
     } finally {
       setSending(false);
     }
-  };
+  }, [inputText, userProfile, sending, teamId]);
 
-  const renderMessageItem = ({ item }: { item: ChatMessage }) => {
-    const isMe = item.senderId === userProfile?.id;
-    const formattedTime = new Date(item.createdAt).toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+  const keyExtractor = useCallback((item: ChatMessage) => item.id, []);
 
-    return (
-      <View style={[styles.messageRow, isMe ? styles.myMessageRow : styles.otherMessageRow]}>
-        {!isMe && (
-          <View style={styles.senderAvatar}>
-            <Text style={styles.senderAvatarText}>
-              {item.senderName ? item.senderName.charAt(0).toUpperCase() : 'U'}
-            </Text>
-          </View>
-        )}
-
-        <View style={[styles.bubble, isMe ? styles.myBubble : styles.otherBubble]}>
-          {!isMe && <Text style={styles.senderName}>{item.senderName}</Text>}
-          <Text style={[styles.messageText, isMe ? styles.myMessageText : styles.otherMessageText]}>
-            {item.text}
-          </Text>
-          <Text style={[styles.timeText, isMe ? styles.myTimeText : styles.otherTimeText]}>
-            {formattedTime}
-          </Text>
-        </View>
-      </View>
-    );
-  };
+  const renderMessageItem = useCallback(
+    ({ item }: { item: ChatMessage }) => {
+      const isMe = item.senderId === userProfile?.id;
+      return <ChatMessageItem message={item} isMe={isMe} />;
+    },
+    [userProfile?.id]
+  );
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
@@ -104,6 +127,9 @@ export const ChatScreen: React.FC = () => {
           style={styles.backBtn}
           onPress={() => navigation.goBack()}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Quay lại danh sách nhóm"
         >
           <Feather name="arrow-left" size={22} color={colors.textPrimary} />
         </TouchableOpacity>
@@ -133,10 +159,15 @@ export const ChatScreen: React.FC = () => {
           <FlatList
             ref={flatListRef}
             data={messages}
-            keyExtractor={(item) => item.id}
+            keyExtractor={keyExtractor}
             renderItem={renderMessageItem}
             contentContainerStyle={styles.messagesList}
             showsVerticalScrollIndicator={false}
+            initialNumToRender={15}
+            maxToRenderPerBatch={15}
+            windowSize={7}
+            removeClippedSubviews={Platform.OS === 'android'}
+            keyboardShouldPersistTaps="handled"
             onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
             onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
             ListEmptyComponent={

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -8,7 +8,7 @@ import { colors } from '../theme/colors';
 export const ProfileScreen: React.FC = () => {
   const { userProfile, user, signOut } = useAuth();
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     Alert.alert('Đăng xuất', 'Bạn có chắc chắn muốn đăng xuất khỏi ứng dụng không?', [
       { text: 'Hủy', style: 'cancel' },
       {
@@ -23,7 +23,7 @@ export const ProfileScreen: React.FC = () => {
         },
       },
     ]);
-  };
+  }, [signOut]);
 
   const displayName = userProfile?.name || user?.displayName || 'Người dùng';
   const displayEmail = userProfile?.email || user?.email || 'Chưa cập nhật email';
@@ -83,7 +83,14 @@ export const ProfileScreen: React.FC = () => {
         </View>
 
         {/* Logout Button */}
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={styles.logoutBtn}
+          onPress={handleLogout}
+          activeOpacity={0.8}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Đăng xuất khỏi tài khoản"
+        >
           <Feather name="log-out" size={18} color={colors.danger} />
           <Text style={styles.logoutText}>Đăng Xuất</Text>
         </TouchableOpacity>

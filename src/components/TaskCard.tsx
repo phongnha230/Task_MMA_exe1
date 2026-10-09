@@ -11,73 +11,68 @@ interface TaskCardProps {
   onStatusChange: (task: Task, nextStatus: TaskStatus) => void;
 }
 
-export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onDelete, onStatusChange }) => {
+const PRIORITY_CONFIG: Record<TaskPriority, { color: string; bg: string; border: string; label: string }> = {
+  High: {
+    color: colors.priorityHigh,
+    bg: colors.priorityHighBg,
+    border: colors.priorityHighBorder,
+    label: 'High',
+  },
+  Medium: {
+    color: colors.priorityMedium,
+    bg: colors.priorityMediumBg,
+    border: colors.priorityMediumBorder,
+    label: 'Medium',
+  },
+  Low: {
+    color: colors.priorityLow,
+    bg: colors.priorityLowBg,
+    border: colors.priorityLowBorder,
+    label: 'Low',
+  },
+};
+
+const STATUS_CONFIG: Record<TaskStatus, { color: string; bg: string; border: string; label: string }> = {
+  Done: {
+    color: colors.statusDone,
+    bg: colors.statusDoneBg,
+    border: colors.statusDoneBorder,
+    label: 'Done',
+  },
+  'In Progress': {
+    color: colors.statusInProgress,
+    bg: colors.statusInProgressBg,
+    border: colors.statusInProgressBorder,
+    label: 'In Progress',
+  },
+  'To Do': {
+    color: colors.statusTodo,
+    bg: colors.statusTodoBg,
+    border: colors.statusTodoBorder,
+    label: 'To Do',
+  },
+};
+
+const getNextStatus = (current: TaskStatus): TaskStatus => {
+  if (current === 'To Do') return 'In Progress';
+  if (current === 'In Progress') return 'Done';
+  return 'To Do';
+};
+
+const TaskCardComponent: React.FC<TaskCardProps> = ({ task, onEdit, onDelete, onStatusChange }) => {
   const isDone = task.status === 'Done';
   const isInProgress = task.status === 'In Progress';
 
-  const getPriorityConfig = (priority: TaskPriority) => {
-    switch (priority) {
-      case 'High':
-        return {
-          color: colors.priorityHigh,
-          bg: colors.priorityHighBg,
-          border: colors.priorityHighBorder,
-          label: 'High',
-        };
-      case 'Low':
-        return {
-          color: colors.priorityLow,
-          bg: colors.priorityLowBg,
-          border: colors.priorityLowBorder,
-          label: 'Low',
-        };
-      default:
-        return {
-          color: colors.priorityMedium,
-          bg: colors.priorityMediumBg,
-          border: colors.priorityMediumBorder,
-          label: 'Medium',
-        };
-    }
-  };
-
-  const getStatusConfig = (status: TaskStatus) => {
-    switch (status) {
-      case 'Done':
-        return {
-          color: colors.statusDone,
-          bg: colors.statusDoneBg,
-          border: colors.statusDoneBorder,
-          label: 'Done',
-        };
-      case 'In Progress':
-        return {
-          color: colors.statusInProgress,
-          bg: colors.statusInProgressBg,
-          border: colors.statusInProgressBorder,
-          label: 'In Progress',
-        };
-      default:
-        return {
-          color: colors.statusTodo,
-          bg: colors.statusTodoBg,
-          border: colors.statusTodoBorder,
-          label: 'To Do',
-        };
-    }
-  };
-
-  const getNextStatus = (current: TaskStatus): TaskStatus => {
-    if (current === 'To Do') return 'In Progress';
-    if (current === 'In Progress') return 'Done';
-    return 'To Do';
-  };
-
-  const priorityCfg = getPriorityConfig(task.priority);
-  const statusCfg = getStatusConfig(task.status);
+  const priorityCfg = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG.Medium;
+  const statusCfg = STATUS_CONFIG[task.status] || STATUS_CONFIG['To Do'];
 
   return (
-    <View style={[styles.outerContainer, isDone && styles.outerContainerDone]}>
+    <View
+      style={[styles.outerContainer, isDone && styles.outerContainerDone]}
+      accessible={true}
+      accessibilityRole="text"
+      accessibilityLabel={`Nhiệm vụ ${task.title}, mức độ ${task.priority}, trạng thái ${task.status}`}
+    >
       <View style={styles.card}>
         {/* Top bar: Status toggle & Title & Actions */}
         <View style={styles.topRow}>
@@ -89,6 +84,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onDelete, onSt
             ]}
             onPress={() => onStatusChange(task, isDone ? 'To Do' : 'Done')}
             activeOpacity={0.7}
+            accessible={true}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: isDone }}
+            accessibilityLabel={`Đánh dấu hoàn thành cho ${task.title}`}
           >
             {isDone ? (
               <Feather name="check" size={13} color={colors.white} />
@@ -131,6 +130,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onDelete, onSt
               onPress={() => onEdit(task)}
               activeOpacity={0.6}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={`Chỉnh sửa nhiệm vụ ${task.title}`}
             >
               <Feather name="edit-3" size={15} color={colors.textSecondary} />
             </TouchableOpacity>
@@ -140,6 +142,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onDelete, onSt
               onPress={() => onDelete(task.id, task.title)}
               activeOpacity={0.6}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={`Xóa nhiệm vụ ${task.title}`}
             >
               <Feather name="trash-2" size={15} color={colors.danger} />
             </TouchableOpacity>
@@ -163,6 +168,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onDelete, onSt
               ]}
               onPress={() => onStatusChange(task, getNextStatus(task.status))}
               activeOpacity={0.7}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={`Chuyển trạng thái từ ${statusCfg.label}`}
             >
               <View style={[styles.statusDot, { backgroundColor: statusCfg.color }]} />
               <Text style={[styles.pillText, { color: statusCfg.color }]}>{statusCfg.label}</Text>
@@ -207,6 +215,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onDelete, onSt
     </View>
   );
 };
+
+export const TaskCard = React.memo(TaskCardComponent);
 
 const styles = StyleSheet.create({
   outerContainer: {

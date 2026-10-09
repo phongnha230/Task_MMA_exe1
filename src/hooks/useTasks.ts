@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { CreateTaskInput, Task, TaskStats, TaskStatus, UpdateTaskInput } from '../types/task';
 import { taskService } from '../services/taskService';
 
@@ -10,6 +10,16 @@ export const useTasks = () => {
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');
   const [refreshing, setRefreshing] = useState(false);
+
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -35,12 +45,24 @@ export const useTasks = () => {
     return tasks.filter((t) => t.status === statusFilter);
   }, [tasks, statusFilter]);
 
+  // Single-pass O(N) statistics aggregation
   const stats: TaskStats = useMemo(() => {
+    let todo = 0;
+    let inProgress = 0;
+    let done = 0;
+
+    for (let i = 0; i < tasks.length; i++) {
+      const s = tasks[i].status;
+      if (s === 'To Do') todo++;
+      else if (s === 'In Progress') inProgress++;
+      else if (s === 'Done') done++;
+    }
+
     return {
       total: tasks.length,
-      todo: tasks.filter((t) => t.status === 'To Do').length,
-      inProgress: tasks.filter((t) => t.status === 'In Progress').length,
-      done: tasks.filter((t) => t.status === 'Done').length,
+      todo,
+      inProgress,
+      done,
     };
   }, [tasks]);
 
@@ -58,8 +80,8 @@ export const useTasks = () => {
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    // Realtime listener handles continuous sync, this resets visual indicator
-    setTimeout(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
       setRefreshing(false);
     }, 600);
   }, []);
