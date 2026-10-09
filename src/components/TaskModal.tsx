@@ -386,7 +386,6 @@ const TaskModalComponent: React.FC<TaskModalProps> = ({
 
             {/* Hạn hoàn thành */}
             <View style={styles.fieldBlock}>
-              <Text style={styles.fieldLabel}>Hạn hoàn thành (Due Date)</Text>
               <DueDatePicker value={dueDate} onChange={setDueDate} />
             </View>
 
